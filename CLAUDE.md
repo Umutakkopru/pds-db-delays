@@ -4,7 +4,7 @@ Last updated: 6 Nov 2026 · PDS Group 18
 
 ## How to use this document
 
-This is the single source of truth for our Practical Data Science (PDS) capstone. Paste or attach it at the start of any session with an AI assistant (Claude, ChatGPT, Claude Code) before asking for help with code, the proposal, the report or the slides.
+This is the single source of truth for our Practical Data Science (PDS) capstone. Paste or attach this document at the start of any session with an AI assistant (Claude, ChatGPT, Claude Code) before asking for help with code, the proposal, the report or the slides. The reasoning and evidence behind each data and method decision is recorded separately in `docs/decision_log.md`, written as the basis for the report's Data and Methodology sections.
 
 **Instructions for the AI assistant reading this:**
 
@@ -15,6 +15,7 @@ This is the single source of truth for our Practical Data Science (PDS) capstone
 - Report, code comments and slides are in English.
 - This document contains only project facts and decisions. Do not add personal goals, career plans or private details of team members to it, to the report or to the slides.
 - Individual members may keep personal instructions in `CLAUDE.local.md` (not in Git); those apply only to that member's sessions.
+- When a data or method decision is made, add an entry to `docs/decision_log.md` (template at its end) with the evidence (script, output file, numbers).
 
 ## Project at a glance
 
@@ -219,7 +220,7 @@ A DuckDB/SQL pipeline turns ~28 monthly files into one clean Würzburg table; mo
 
 Why this date range:
 
-- **Start July 2024:** the earliest month the archive covers Würzburg Hbf; more history means more training data and two full winters (2024/25, 2025/26), which matter for weather-related delays. If the first month is incomplete, training starts in August 2024.
+- **Start July 2024:** the earliest month the archive covers Würzburg Hbf; more history means more training data and two full winters (2024/25, 2025/26), which matter for weather-related delays. July 2024 is complete (13,887 Würzburg rows, median 467 per day), so training starts in July 2024.
 - **End October 2026:** the last complete month at the time of the plan. November 2026 is not used, so the dataset stays fixed for the whole project.
 - **Validation Jan – Jun 2026 (scenario A):** contains winter and spring, so tuning sees bad-weather conditions.
 - **Test Jul – Oct 2026:** the most recent data, which mimics real use (train on the past, predict the future). Limitation: the test period has no winter months; reported in the Discussion, and season effects are checked on the validation set.
@@ -420,6 +421,7 @@ Each week ends with a working result; nothing moves to the next week half done.
 - [x] Start of full coverage: 2 Nov 2025 (dataset changelog) → scenario B from 3 Nov 2025 (`config.py`)
 - [x] `checks/data_quality_check.py` sections 1–3 (6 Nov 2026): 0 duplicate ids across all 28 files; `departure_change_time` is never empty (0.0% every month); only 2 days with few planned departures (2 Feb 2026, 8 Apr 2026); full coverage confirmed from 3 Nov 2025 (2 Nov: 2.6%, 3 Nov: 100% of RB/RE through trains with the preceding stop)
 - [x] `checks/data_quality_check.py` section 4 (7 Nov 2026): 11 "too punctual" days, all holidays or Sundays with light traffic (24 Dec 2025 – 1 Jan 2026, Easter weekend 4–5 Apr 2026, Sundays 14 Jun and 27 Sep 2026); July 2026 (largest documented gap) is not unusual. **Decision: no days are excluded**; holidays stay in the data and are covered by the calendar features
+- [x] `docs/decision_log.md`: decisions D1–D12 with evidence (7 Nov 2026)
 - [ ] Write the cleaning step and save `wuerzburg_clean.parquet`
 
 **Week 2 — EDA, baselines, proposal (until 17 Nov 2026)**
@@ -501,7 +503,6 @@ No risk threatens a pass; the main ones cost effort or points, and each has a fa
 | Third member not found by 15 Nov | Medium | High | Reply to the group-search emails now; post in the course forum |
 | Monthly files large (download time, disk) | Low | Low | ~5 GB in total; raw files kept in `data/raw/` (gitignored), `--delete-raw` if disk gets tight |
 | Categories change over time (line format, ARV relabel) | Confirmed | Medium | `line_id` and `service` instead of raw `train_type`; check in cleaning that RE/RB labels before Dec 2025 match the line prefix after (via `train_number`); error analysis sliced by lines 8 and 80 |
-| First months incomplete | Medium | Low | Check daily counts; start in August 2024 if needed |
 | Collection gaps / target is last reported time, not always realised | Confirmed (changelog) | Medium | Gap check per day; exclude affected days from evaluation; named as limitation |
 | Earlier stops missing before Nov 2025 | Confirmed | Medium | Scenario B trains from Nov 2025 only; coverage table reported in the Data section |
 | Joining earlier stops goes wrong (ride ID per schedule, midnight trips) | Medium | Medium | Ride ID + service date; validate on the RB53 example |
@@ -554,7 +555,7 @@ Save this document as `CLAUDE.md` in the repository root; Claude Code reads that
 
 1. Start: "Read CLAUDE.md. Today's task: <task from the to-do list>."
 2. Work in small steps; run each script and check its output before moving on.
-3. End: update the to-do checkboxes and **Current status** below.
+3. End: update the to-do checkboxes and **Current status** below; add an entry to `docs/decision_log.md` if a decision was made.
 
 **Current status (7 Nov 2026).** All 28 months downloaded and filtered (`data/interim/`); coverage, category and data-quality checks done; rules for cleaning, cancellations and time zone fixed; no days excluded. **Next action:** write `src/02_clean.py` (+ `src/sql/02_clean.sql`) and save `data/processed/wuerzburg_clean.parquet`.
 
@@ -572,7 +573,9 @@ pds-db-delays/
 │   ├── raw/                # monthly files (kept for reruns)
 │   ├── interim/            # filtered monthly Würzburg files (incl. earlier stops)
 │   └── processed/          # wuerzburg_clean.parquet, feature tables
-├── checks/                 # one-off exploration scripts (coverage_check.py)
+├── checks/                 # data check scripts: coverage_check.py, category_check.py, data_quality_check.py
+├── docs/
+│   └── decision_log.md     # decisions with evidence, basis for the report
 ├── src/
 │   ├── config.py           # paths, station, months, splits, seed
 │   ├── 01_download.py
@@ -590,7 +593,7 @@ pds-db-delays/
 ├── models/                 # saved models (small, may be committed)
 └── reports/
     ├── figures/
-    ├── checks/             # per-month data checks from 01_download.py
+    ├── checks/             # outputs of 01_download.py and the scripts in checks/
     └── results.md
 ```
 

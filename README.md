@@ -2,7 +2,7 @@
 
 Practical Data Science capstone, Information Systems M.Sc., University of Würzburg, WiSe 2026/27 (Group 18).
 
-We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsche Bahn's punctuality threshold), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Project context, decisions and plan: [`CLAUDE.md`](CLAUDE.md).
+We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsche Bahn's punctuality threshold), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Project context and plan: [`CLAUDE.md`](CLAUDE.md). Data and method decisions with their evidence: [`docs/decision_log.md`](docs/decision_log.md).
 
 **Data:** [Deutsche Bahn Data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) (CC BY 4.0, Deutsche Bahn), July 2024 – October 2026.
 
@@ -32,14 +32,22 @@ python run_pipeline.py
 
 Outputs of step 1: `data/interim/wuerzburg_YYYY-MM.parquet` (Würzburg rows plus earlier stops of the same trips) and per-month checks in `reports/checks/`.
 
+```bash
+# Data checks (after step 1); results in reports/checks/
+python checks/coverage_check.py      # earlier-stop coverage per period (downloads 5 sample months if missing)
+python checks/category_check.py      # train types and line numbers over time
+python checks/data_quality_check.py  # duplicates, cancellations, collection gaps
+```
+
 ## Repository layout
 
 | Path | Content |
 | --- | --- |
 | `src/` | Pipeline steps `01`–`05`, `config.py` (paths, splits, seed), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
-| `tests/` | Leakage tests, run before every training run |
-| `checks/` | One-off exploration scripts (coverage check) |
+| `tests/` | Leakage and configuration tests, run before every training run |
+| `checks/` | Data check scripts (coverage, categories, data quality) |
+| `docs/` | Decision log: data and method decisions with evidence |
 | `notebooks/` | EDA only, no pipeline logic |
 | `app/` | Streamlit dashboard |
 | `models/` | Saved models |
