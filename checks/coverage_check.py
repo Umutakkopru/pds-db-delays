@@ -5,9 +5,9 @@ Question: for trains that ARRIVE at Würzburg Hbf and depart again, do the
 earlier stops of the same trip exist in the data? Is this different before
 and after November 2025, when the archive expanded to all stations?
 
-Reads:  monthly DB files data-YYYY-MM.parquet (downloaded from Hugging Face
-        if not present in this folder; deleted again unless --keep is given)
-Writes: coverage_by_month.csv in this folder
+Reads:  monthly DB files in data/raw/monthly_processed_data/ (downloaded from
+        Hugging Face if missing; deleted again unless --keep is given)
+Writes: reports/checks/coverage_by_month.csv
 
 Run:    python coverage_check.py
         python coverage_check.py --months 2025-10 2025-11 --keep
@@ -19,6 +19,8 @@ import duckdb
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+RAW = ROOT / "data" / "raw"
 STATION = "Würzburg Hbf"
 # Old period (100 largest stations) vs. new period (all stations).
 DEFAULT_MONTHS = ["2024-07", "2025-03", "2025-10", "2025-11", "2026-10"]
@@ -27,7 +29,7 @@ DEFAULT_MONTHS = ["2024-07", "2025-03", "2025-10", "2025-11", "2026-10"]
 def get_file(month: str) -> tuple[Path, bool]:
     """Return the local path of a monthly file and whether it was downloaded now."""
     name = f"data-{month}.parquet"
-    for candidate in (HERE / name, HERE / "monthly_processed_data" / name):
+    for candidate in (RAW / "monthly_processed_data" / name,):
         if candidate.exists():
             return candidate, False
     from huggingface_hub import hf_hub_download
@@ -36,7 +38,7 @@ def get_file(month: str) -> tuple[Path, bool]:
         repo_id="piebro/deutsche-bahn-data",
         repo_type="dataset",
         filename=f"monthly_processed_data/{name}",
-        local_dir=HERE,
+        local_dir=RAW,
     )
     return Path(path), True
 
@@ -153,7 +155,7 @@ def main() -> None:
     con = duckdb.connect()
     result = pd.concat([check_month(con, m, args.keep) for m in args.months], ignore_index=True)
 
-    out = HERE / "coverage_by_month.csv"
+    out = ROOT / "reports" / "checks" / "coverage_by_month.csv"
     result.to_csv(out, index=False)
 
     print("\n=== Summary: % of arriving trains with at least one earlier stop ===")
