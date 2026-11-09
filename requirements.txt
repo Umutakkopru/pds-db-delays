@@ -9,6 +9,7 @@ lightgbm>=4.3     # macOS (Apple Silicon): run `brew install libomp` first
 shap>=0.45
 streamlit>=1.35
 huggingface_hub>=0.23
+requests>=2.31    # Open-Meteo weather download (step 03)
 holidays>=0.50
 pytest>=8.0
 jupyter>=1.0

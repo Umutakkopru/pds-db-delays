@@ -26,6 +26,19 @@ FORBIDDEN_COLUMNS = {
     "wuerzburg_id",
     "train_line_ride_id",
     "time",
+    # high cardinality and may change at the December timetable change;
+    # used only as a key for history rates (decision log D14)
+    "train_number",
+    # disruption flags filled from DB's change feed (known only once the
+    # disruption happens): filters only, never features (decision log D16)
+    "is_additional_stop",
+    "is_replacement_train",
+    "replaced_train_type",
+    "replaced_train_number",
+    "has_plan_record",
+    # pipeline bookkeeping
+    "source_month",
+    "row_role",
 }
 
 # Allowed feature columns per scenario (filled in week 3).

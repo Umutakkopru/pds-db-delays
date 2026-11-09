@@ -1,10 +1,14 @@
 # Decision log: data and method decisions
 
+> Read this file (rule "Read-when" in `CLAUDE.md`) before making or changing a data or method decision, before writing the Data or Methodology section, and whenever a number has to be traced to its source.
+
 Purpose: a chronological record of every data and method decision, with the question, the evidence, the decision and where it goes in the report. Every number here is traceable to a script and an output file in this repository. The report's Data and Methodology sections are written from this log.
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Status: 7 Nov 2026, end of week 1 (data acquisition and data checks complete; cleaning step next).
+Who decided: D1–D16 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+
+Status: 7 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; cleaning step next).
 
 ---
 
@@ -24,6 +28,10 @@ Status: 7 Nov 2026, end of week 1 (data acquisition and data checks complete; cl
 | D10 | Time zone | Naive local time throughout; DST nights 00–05 h excluded | Dataset documentation; 5 DST days | 3 |
 | D11 | Target validity and collection gaps | Target = last reported time from DB's API; no days excluded | Data quality check sections 1–4 | 3, 6 Discussion |
 | D12 | Duplicates and month boundaries | Drop duplicate ids (none found); earlier stops searched within the monthly file | Data quality check; download step | 3 |
+| D13 | Evaluation protocol | Control model M-A′; paired day-block bootstrap; refit on train + val; no class weights; B by horizon | Split sizes per scenario; B horizon by service | 4, 5 |
+| D14 | Baseline and history features | B1 = service × hour; history window [D − 29, D − 1); `train_number` not a feature | D7 (unstable `train_type`); prediction moment of scenario A | 4 |
+| D15 | Dashboard scope | Replay of real test-period departures, no free future dates | No live weather/history without API calls | 5 |
+| D16 | Disruption flags | `is_additional_stop`, `is_replacement_train`, `replaced_train_*`, `has_plan_record` are filters only, never features | Additional stops 43.8% delayed vs. 24.6% | 4 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -49,7 +57,51 @@ Key numbers (all 28 months, Würzburg Hbf):
 
 **Decision.** Deutsche Bahn departure delays at Würzburg Hbf, using the open archive `piebro/deutsche-bahn-data` (Hugging Face, CC BY 4.0, one Parquet file per month, ~15 million rows per month for Germany). Fallback topic: German electricity demand.
 
-**Evidence.** First data check on Oct 2026 and Mar 2025 (`check_db.py`, outside the repository): 12,975 Würzburg rows in Oct 2026, ~430 stops per day, no gaps, 0.2% missing delay values, 20.2% of stops departing 6+ min late, 0 duplicate ids.
+**Evidence.** First data check on Oct 2026 and Mar 2025 (`check_db.py` and `check_old.py`, outside the repository in `../pds-db-check/`):
+
+| Check | Result |
+| --- | --- |
+| Rows per month | 12,975 (Oct 2026), 13,174 (Mar 2025); ~430 stops per day |
+| Daily continuity | Median ~436 rows/day; lowest days are weekends and the 3 Oct holiday; no gaps |
+| Missing delay values | 0.2% |
+| Stops delayed 6+ min (cancelled excluded) | 20.2% |
+| Cancelled stops | 1.1% |
+| Duplicate IDs | 0 |
+| Both planned times missing | 22 rows (0.2%) |
+| `has_plan_record` = False | 411 rows (3.2%) |
+| Delay range | −17 to 396 min; median 1, mean 5.2 |
+| Planned arrival or departure empty (train starts or ends at Würzburg) | ~33% |
+
+Share of stops departing 6+ min late by train type (Oct 2026, cancelled excluded); ICE trains are delayed about four times as often as RB trains:
+
+| Train type | Delayed 6+ min | Stops (n) |
+| --- | --- | --- |
+| NJ (Nightjet) | 80.2% | 249 |
+| ICE | 42.6% | 2,919 |
+| ARV | 16.3% | 2,283 |
+| RE | 11.5% | 3,802 |
+| RB | 9.7% | 3,681 |
+| All stops | 20.2% | – |
+
+Over all 28 months (approximate cleaning rules, 7 Nov 2026): 230,388 non-cancelled train departures with a timetable record, 24.6% departing 6+ min late; 109,085 (47%) of them start at Würzburg (no planned arrival).
+
+**Actual columns** (the GitHub README of the dataset is outdated; these are the real names):
+
+| Column | Meaning | Use |
+| --- | --- | --- |
+| `station_name`, `xml_station_name`, `eva` | Station name and ID | Filter: `station_name = 'Würzburg Hbf'` |
+| `train_type`, `line_number`, `train_number` | ICE, RE, RB, ARV, NJ…; line such as RB53; train number | Build `line_id`, `service`; `train_number` as history key only |
+| `final_destination_station` | Final stop of the train | Feature (checked for leakage, D16) |
+| `arrival_planned_time`, `departure_planned_time` | Timetable times | Features, split, target |
+| `arrival_change_time`, `departure_change_time` | Last reported (realised) times | Target only at Würzburg; earlier-stop delays in scenario B |
+| `delay_in_min` | Departure delay where a departure exists | Check only |
+| `time` | Event timestamp | Never a feature |
+| `arrival_is_canceled`, `departure_is_canceled` | Cancellation flags | Filter |
+| `train_line_ride_id`, `train_line_station_num` | Scheduled-run ID and position in the full route | Join earlier stops; stops between |
+| `has_plan_record`, `is_additional_stop`, `is_replacement_train`, `replaced_train_*` | Data-quality and disruption flags | Filter only (D16) |
+| `row_role`, `wuerzburg_id`, `source_month` | Added by `01_filter_month.sql` | Pipeline bookkeeping |
+
+Example of delay propagation: on 6 Oct 2026 an RB53 was 18 min late at Oberhaid and still 13 min late at Würzburg Hbf.
 
 **About the source** (dataset documentation): collected from DB's public Timetables API (`plan` and `fchg` endpoints) four times a day at 03, 09, 15 and 21 UTC; each run stores the changes of the previous 6+ hours; timestamps are German local time; the ~100 largest stations are covered from July 2024, all stations from 2 November 2025; API errors caused collection gaps between November 2025 and July 2026.
 
@@ -104,7 +156,7 @@ Key numbers (all 28 months, Würzburg Hbf):
 
 **Why LightGBM.** The data is tabular; gradient-boosted trees are the established strong choice for tabular data (Grinsztajn et al., 2022). They learn interactions (e.g. long-distance train × Friday evening × rain) without hand-built terms, handle missing values (no earlier stop) and categorical features natively, train in seconds on ~365,000 rows, and SHAP's TreeExplainer gives exact explanations for the report and the dashboard.
 
-**Not taken on faith.** LightGBM is only called better if its test PR-AUC is above B2's with non-overlapping 95% bootstrap confidence intervals. Alternatives considered: XGBoost/CatBoost (same family, no clear advantage), Random Forest (usually slightly weaker), neural networks (more effort, harder to explain, no expected gain on this data).
+**Not taken on faith.** LightGBM is only called better if the 95% interval of its PR-AUC difference to B2 lies above zero (paired day-block bootstrap; revised 7 Nov 2026, see D13; the original criterion was non-overlapping confidence intervals). Alternatives considered: XGBoost/CatBoost (same family, no clear advantage), Random Forest (usually slightly weaker), neural networks (more effort, harder to explain, no expected gain on this data).
 
 **Metrics.** Primary PR-AUC (only ~20–25% positives); ROC-AUC; F1, precision and recall at a threshold chosen on validation; Brier score and reliability diagram. A scenario A ROC-AUC above ~0.95 is treated as a leakage warning.
 
@@ -220,6 +272,70 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 - Known limitation: earlier stops are searched only within the same monthly file; a train arriving shortly after midnight on the 1st loses earlier stops on the last day of the previous month (a few trains per month, scenario B only).
 
 **Report.** Data or Methodology (pipeline), one sentence each.
+
+## D13 Evaluation protocol refined (7 Nov 2026)
+
+**Question.** Does the evaluation design answer the research question (how much of a delay builds up en route) without confounding, and are model differences judged correctly?
+
+**Method.** Plan review; DuckDB count on `data/interim/` with approximate cleaning rules (non-cancelled train departures with a timetable record, no buses; DST and duplicate rules not yet applied).
+
+**Result.**
+
+| Period | Departures | Through trains | Departing 6+ min late | Median planned minutes from last earlier stop |
+| --- | --- | --- | --- | --- |
+| Before 3 Nov 2025 | 137,087 | 67,105 | 25.6% | 55 |
+| B train (3 Nov 2025 – Apr 2026) | 45,261 | 23,946 | 23.6% | 41 |
+| B validation (May – Jun 2026) | 16,072 | 8,031 | 21.3% | 41 |
+| Test (Jul – Oct 2026) | 31,968 | 15,921 | 23.0% | 40 |
+
+M-A is trained on 18 months of all departures, M-B on 6 months of through trains, so M-B − M-A mixes the effect of the propagation features with the effect of a different training period and size. The minutes from the previous stop differ strongly by service (ICE ~30–60 min, RB/RE often a few minutes).
+
+**Decision.**
+- **Control model M-A′:** scenario A features, scenario B training window, through trains. The contribution of propagation features is M-B − M-A′ on identical test rows.
+- **Model comparison:** paired bootstrap of the metric difference on the same test rows, resampling whole days (1,000 resamples), because delays within one day are correlated. A model counts as better if the 95% interval of the difference lies above zero. Replaces "non-overlapping confidence intervals" (D5), which is overly conservative and ignored within-day correlation.
+- **Final refit:** hyperparameters, number of trees (early stopping) and the threshold (max F1) are chosen with training-only models on validation; final models are refitted on training + validation with these settings and scored once on the test set.
+- **No class weighting** in LightGBM or logistic regression (keeps probabilities calibrated for the Brier score and the dashboard); the threshold handles the 23% positive rate.
+- **Scenario B results by horizon:** reported by `service` and by planned minutes from the previous stop (< 10, 10–30, > 30 min).
+
+**Alternatives considered.** Training M-A on the B window only (loses the long history that is A's advantage); rolling-origin evaluation (more effort; still optional).
+
+**Report.** Methodology (evaluation design), Results (A vs. A′ vs. B, horizon slices).
+
+## D14 Baseline 1 and history features (7 Nov 2026)
+
+**Question.** Which grouping does the rule-based baseline use, and which data may history features see?
+
+**Decision.**
+- **B1 = historical delay rate of `service` × planned hour** (training data only). Raw `train_type` is not used, because ARV is almost absent from the training period but 17% of test rows (D7).
+- **History window:** for a departure on day D, departures planned in [D − 29, D − 1 00:00). Scenario A is asked the day before, so day D − 1 is not complete at prediction time. The time-travel test truncates the data at D − 1 00:00.
+- **Keys and fallback:** train number → `line_id` (regional) or route group (ICE, origin/destination direction) → `service`, used when a cell has too few departures in the window.
+- **`train_number` is not a model feature** (high cardinality, can change at the December timetable change); added to `FORBIDDEN_COLUMNS` in `src/features_config.py`. It remains a key for history rates.
+
+**Report.** Methodology (baselines, features).
+
+## D15 Dashboard scope (7 Nov 2026)
+
+**Question.** Can the dashboard predict for any future date?
+
+**Reasoning.** Scenario A features include weather and recent history; for a future date both would need live API calls, which are out of scope.
+
+**Decision.** The dashboard replays real departures of the test period (Jul – Oct 2026): the user picks a date and a departure and sees the predicted probability, the actual outcome and the SHAP explanation; for scenario B a slider changes the previous-stop delay. The app loads a saved model and a small table of test-period feature rows.
+
+**Report.** Results (dashboard), appendix link.
+
+## D16 Disruption flags are filters, not features (7 Nov 2026)
+
+**Question.** Which raw columns besides the change times carry information that exists only once a disruption has happened?
+
+**Method.** DuckDB query on `data/interim/` (230,388 non-cancelled train departures with a timetable record, buses excluded), comparing the delay rate per flag value and per destination.
+
+**Result.**
+- `is_additional_stop` = true: 16 departures, 43.8% departing 6+ min late, vs. 24.6% otherwise. Additional stops, replacement trains (`is_replacement_train`, `replaced_train_type`, `replaced_train_number`) and missing timetable records (`has_plan_record`) come from DB's change feed and are set when the disruption is known, not the day before.
+- `final_destination_station`: departures whose destination differs from the usual destination of their train number are delayed 24.3% of the time vs. 24.6%; no sign that changed destinations leak disruptions. Allowed as a feature.
+
+**Decision.** The disruption flags plus `source_month` and `row_role` are added to `FORBIDDEN_COLUMNS` in `src/features_config.py`; they may only be used to filter rows. Excluding cancelled departures is also a filter based on information known only later; it is standard because the target is undefined for a train that does not run (D9) and is named in the Discussion.
+
+**Report.** Methodology (leakage rules), one sentence.
 
 ---
 

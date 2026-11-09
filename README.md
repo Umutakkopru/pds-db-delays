@@ -2,7 +2,7 @@
 
 Practical Data Science capstone, Information Systems M.Sc., University of Würzburg, WiSe 2026/27 (Group 18).
 
-We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsche Bahn's punctuality threshold), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Project context and plan: [`CLAUDE.md`](CLAUDE.md). Data and method decisions with their evidence: [`docs/decision_log.md`](docs/decision_log.md).
+We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsche Bahn's punctuality threshold), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Start here: [`docs/project_plan.md`](docs/project_plan.md) (course requirements, timeline, roles), [`docs/decision_log.md`](docs/decision_log.md) (data and method decisions with evidence), [`CLAUDE.md`](CLAUDE.md) (working rules and current status, also read by AI assistants).
 
 **Data:** [Deutsche Bahn Data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) (CC BY 4.0, Deutsche Bahn), July 2024 – October 2026.
 
@@ -47,7 +47,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
 | `tests/` | Leakage and configuration tests, run before every training run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
-| `docs/` | Decision log: data and method decisions with evidence |
+| `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
 | `notebooks/` | EDA only, no pipeline logic |
 | `app/` | Streamlit dashboard |
 | `models/` | Saved models |
