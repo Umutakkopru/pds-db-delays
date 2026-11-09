@@ -45,6 +45,11 @@ FORBIDDEN_COLUMNS = {
     "row_role",
 }
 
+# Naming rule: every feature built from earlier stops of the same trip starts
+# with this prefix. tests/test_leakage.py uses it to keep such features out of
+# scenario A.
+PROPAGATION_PREFIX = "prev_"
+
 # Allowed feature columns per scenario (filled in week 3).
 FEATURES: dict[str, list[str]] = {
     "A": [],
