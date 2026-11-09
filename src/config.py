@@ -36,6 +36,11 @@ CANCELED_AS_DELAYED_SENSITIVITY = True
 
 HF_REPO = "piebro/deutsche-bahn-data"
 HF_FOLDER = "monthly_processed_data"
+# Commit of the Hugging Face dataset that all downloads use. The maintainer
+# reprocesses past months from time to time (changelog 2026-05, -08, -09), so
+# without a fixed revision two downloads can differ. Change it only together
+# with a full re-run of the pipeline and the data checks.
+HF_REVISION = "3830320ad81e2b96bc4bdf5bedfa61657a60ea0e"
 
 FIRST_MONTH = "2024-07"
 LAST_MONTH = "2026-10"

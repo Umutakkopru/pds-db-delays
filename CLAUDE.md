@@ -156,7 +156,7 @@ Results table (`reports/results.md`, written by `05_train.py`): Model | Scenario
 - Python 3.10 on macOS (Apple Silicon); `.venv/`; minimum versions in `requirements.txt`, exact in `requirements-lock.txt`. LightGBM needs `brew install libomp`.
 - Split dates, months, paths, station, seed and time-zone constants live in `src/config.py`; never hard-code them elsewhere. Reuse `config.month_range()`, `config.dst_change_days()`.
 - English code and comments; one docstring per script stating what it reads and writes; paths via `pathlib` from `Path(__file__)` (folder names contain spaces); seed 42 everywhere; SQL in `src/sql/` files, not long strings; figures to `reports/figures/` with descriptive names; notebooks for EDA only, no pipeline logic.
-- Download: `huggingface_hub.hf_hub_download(repo_id="piebro/deutsche-bahn-data", repo_type="dataset", filename="monthly_processed_data/data-YYYY-MM.parquet")`; `HF_TOKEN` makes it faster.
+- Download: `huggingface_hub.hf_hub_download(repo_id="piebro/deutsche-bahn-data", repo_type="dataset", revision=config.HF_REVISION, filename="monthly_processed_data/data-YYYY-MM.parquet")`; `HF_TOKEN` makes it faster. The revision is fixed in `src/config.py` because the maintainer reprocesses past months; `tests/test_data.py` compares the local row counts with `reports/checks/monthly_summary.csv`.
 - Verified code: `src/01_download.py` + `src/sql/01_filter_month.sql` on all 28 months (12,975 Würzburg rows in Oct 2026, identical to the first data check).
 
 ```text

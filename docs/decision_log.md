@@ -143,6 +143,7 @@ Example of delay propagation: on 6 Oct 2026 an RB53 was 18 min late at Oberhaid 
 **Why this range.**
 - Start July 2024: earliest month in the archive; gives two full winters. July 2024 is complete (13,887 Würzburg rows, median 467 per day), so no later start is needed.
 - End October 2026: last complete month when the plan was made; the dataset stays fixed during the project.
+  - *Correction (10 Nov 2026, audit D-01):* the archive itself is not fixed; the maintainer reprocessed all past months several times in 2026. The download now uses a fixed dataset revision (`HF_REVISION` in `src/config.py`, the commit 26 of the 28 raw files were downloaded from on 6 Nov 2026; the March 2025 and October 2026 files were downloaded on 4 Nov and have the same Würzburg row counts). `tests/test_data.py` checks the local row counts against `reports/checks/monthly_summary.csv`.
 - Validation contains winter and spring, so tuning sees bad-weather conditions.
 - Test = most recent data, mimicking real use. Limitation: no winter months in the test period; season effects are checked on the validation set.
 

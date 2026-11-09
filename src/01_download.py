@@ -7,7 +7,8 @@ the same trips (src/sql/01_filter_month.sql) and saves a small file.
 After all months, writes per-month checks: row counts, daily continuity,
 train types and line-number formats (to detect category changes over time).
 
-Reads:  Hugging Face dataset piebro/deutsche-bahn-data (monthly files)
+Reads:  Hugging Face dataset piebro/deutsche-bahn-data (monthly files, at the
+        fixed revision config.HF_REVISION)
 Writes: data/raw/monthly_processed_data/data-YYYY-MM.parquet  (raw, gitignored)
         data/interim/wuerzburg_YYYY-MM.parquet                (filtered month)
         reports/checks/monthly_summary.csv
@@ -40,6 +41,7 @@ def download_month(month: str) -> Path:
     path = hf_hub_download(
         repo_id=config.HF_REPO,
         repo_type="dataset",
+        revision=config.HF_REVISION,
         filename=f"{config.HF_FOLDER}/{name}",
         local_dir=config.DATA_RAW,
     )
