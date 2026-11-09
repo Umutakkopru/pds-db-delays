@@ -46,3 +46,27 @@ def test_wuerzburg_ids_are_unique():
         FROM {files} WHERE row_role = 'wuerzburg'
     """).iloc[0]
     assert n == n_ids
+
+
+@needs_data
+def test_previous_stop_coverage_from_full_coverage_start():
+    # Decision log D6: from FULL_COVERAGE_START the directly preceding stop of
+    # regional through trains is in the data. Fails if the constant is moved to
+    # a date before the archive covered all stations.
+    df = _query(f"""
+        WITH p AS (
+            SELECT wuerzburg_id, MAX(train_line_station_num) AS last_prev
+            FROM {{files}} WHERE row_role = 'earlier_stop' GROUP BY 1
+        )
+        SELECT strftime(w.departure_planned_time, '%Y-%m') AS month,
+               AVG(CASE WHEN p.last_prev = w.train_line_station_num - 1 THEN 1.0 ELSE 0 END) AS share
+        FROM {{files}} w LEFT JOIN p ON p.wuerzburg_id = w.id
+        WHERE w.row_role = 'wuerzburg'
+          AND w.train_type IN ('RE', 'RB', 'ARV')
+          AND w.arrival_planned_time IS NOT NULL
+          AND w.departure_planned_time >= TIMESTAMP '{config.FULL_COVERAGE_START}'
+          AND NOT COALESCE(w.departure_is_canceled, FALSE)
+        GROUP BY 1 ORDER BY 1
+    """)
+    low = df[df["share"] < 0.95]
+    assert len(df) > 0 and low.empty, f"Months with low previous-stop coverage:\n{low}"
