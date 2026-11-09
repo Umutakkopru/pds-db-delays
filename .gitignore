@@ -1,0 +1,19 @@
+# Data (large, reproducible with the pipeline)
+data/
+*.parquet
+*.csv.gz
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets
+.env
+.streamlit/secrets.toml
+
+# macOS
+.DS_Store
