@@ -133,7 +133,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 **Safeguards**
 
 1. **Feature whitelist and forbidden list** (`src/features_config.py`): models use only whitelisted columns; `FORBIDDEN_COLUMNS` holds change times, delays, target, cancellation flags, ids, `time`, `train_number`, disruption flags, `source_month`, `row_role`.
-2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features (name check only; passes trivially while the lists are empty); no propagation features in A (`prev_` prefix); splits chronological and disjoint; same test period; B starts at full coverage (literal date and data check); DST days; filter SQL on a small fixture (12-hour window, midnight, ride id on two days); local row counts equal `monthly_summary.csv`; every raw column is classified as allowed or forbidden; cleaning rules on a small fixture and on the real output (ids unique, no bus/DST/cancelled/invalid rows among modelling rows, stable `line_id`, no test-period delay rate in the count files). **To add:** with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
+2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features (name check only; passes trivially while the lists are empty); no propagation features in A (`prev_` prefix); splits chronological and disjoint; same test period; B starts at full coverage (literal date and data check); DST days; filter SQL on a small fixture (12-hour window, midnight, ride id on two days); local row counts equal `monthly_summary.csv`; every raw column is classified as allowed or forbidden; metrics, day-block bootstrap and baselines on made-up data; the training script refuses the test split; cleaning rules on a small fixture and on the real output (ids unique, no bus/DST/cancelled/invalid rows among modelling rows, stable `line_id`, no test-period delay rate in the count files). **To add:** with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
 3. **Sanity checks on results:** each single feature clearly below ROC-AUC 0.9; shuffled target → ROC-AUC ≈ 0.5; validation and test in the same range; SHAP top features make domain sense (not IDs or timestamps).
 4. **Second pair of eyes:** a second member reviews feature and split code; an AI review ("Check this code for data leakage against the leakage rules in CLAUDE.md") is extra, not a replacement.
 
@@ -175,10 +175,10 @@ pds-db-delays/
 ├── data/{raw,interim,processed}/  # gitignored
 ├── checks/                          # coverage_check.py, category_check.py, data_quality_check.py
 ├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md
-├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py* … 05_train.py*, evaluate.py*, sql/
-├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py
+├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py*, 04_features.py*, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
+├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py
 ├── notebooks/, app/streamlit_app.py*, models/
-└── reports/{figures,checks}/, reports/results.md*
+└── reports/{figures,checks}/, reports/results_validation.md, reports/results.md*
 ```
 
 ## Known gotchas
@@ -220,7 +220,7 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. Tests: 49 passed. Work on step 2 is on branch `02-clean` (to merge). **Next action:** `src/evaluate.py` (metrics, day-block bootstrap) and the baselines B0–B2 on validation.
+**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. `src/evaluate.py` (metrics, max-F1 threshold, paired day-block bootstrap) and the baselines B0–B2 exist; `src/05_train.py` fits them on the A training split and writes `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 (timetable columns only) PR-AUC 0.528, ROC-AUC 0.797; B2 − B1 = +0.015 PR-AUC with the interval above zero. The script never loads test-period rows. Tests: 63 passed. Branches `02-clean` and `03-baselines` (built on it) are to merge. **Next action:** EDA notebook (core figures) and the proposal draft; then `03_enrich`.
 
 **Now (week 2, until 17 Nov)** — in this order
 
@@ -230,7 +230,7 @@ pds-db-delays/
 - [ ] Share `docs/project_plan.md`, `docs/decision_log.md` and `CLAUDE.md` with both members and get agreement (D1–D22)
 - [ ] Download the chair's report template; collect names and matriculation numbers for the proposal
 - [x] `02_clean` with `exclude_reason`, `is_through`, `has_prev_stop` + tests + `cleaning_counts.csv` per split (D19, D20) — 10 Nov; branch `02-clean` to merge
-- [ ] `src/evaluate.py` (metrics, day-block bootstrap, tests) + baselines B0, B1, B2 on validation (D22)
+- [x] `src/evaluate.py` (metrics, day-block bootstrap, tests) + baselines B0, B1, B2 on validation (D22) — 10 Nov; branch `03-baselines` to merge
 - [ ] EDA notebook: core figures only (delay by service, hour, month; cancellations; coverage; rows without plan record)
 - [ ] Draft the two-page proposal; collect 6–10 related-work references; ask the supervisor about the GenAI documentation with the proposal
 
