@@ -152,7 +152,8 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
 - [x] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table (`reports/results_validation.md`, 10 Nov; B2 gets holidays after step 03)
 - [x] EDA notebook, core figures: delay by service, hour, weekday, month; cancellations; coverage; rows without timetable record (10 Nov; also propagation and B horizon)
-- [ ] Draft the two-page proposal (numbers from `cleaning_counts.csv`); first 6–10 related-work references
+- [x] Draft the two-page proposal (numbers from `cleaning_counts.csv`): `docs/proposal_draft.md`, 10 Nov
+- [ ] First 6–10 related-work references
 - **Result of the week:** clean table, validation scores of three baselines, proposal draft
 
 **Week 3 — enrichment and features (until 24 Nov 2026)**

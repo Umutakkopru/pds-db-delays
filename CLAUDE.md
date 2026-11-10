@@ -174,7 +174,7 @@ pds-db-delays/
 ├── CLAUDE.md, CLAUDE.local.md (gitignored), README.md, requirements*.txt, pytest.ini, run_pipeline.py
 ├── data/{raw,interim,processed}/  # gitignored
 ├── checks/                          # coverage_check.py, category_check.py, data_quality_check.py
-├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md
+├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md, docs/proposal_draft.md
 ├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py*, 04_features.py*, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
 ├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py
 ├── notebooks/01_eda.ipynb, app/streamlit_app.py*, models/
@@ -221,7 +221,7 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. `src/evaluate.py` (metrics, max-F1 threshold, paired day-block bootstrap) and the baselines B0–B2 exist; `src/05_train.py` fits them on the A training split and writes `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 (timetable columns only) PR-AUC 0.528, ROC-AUC 0.797; B2 − B1 = +0.015 PR-AUC with the interval above zero. The script never loads test-period rows. Tests: 63 passed. The EDA notebook (`notebooks/01_eda.ipynb`, training and validation period only) and its 12 figures exist. Branches `02-clean`, `03-baselines` and `04-eda` (each built on the previous one) are to merge. **Next action:** proposal draft; then `03_enrich`.
+**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. `src/evaluate.py` (metrics, max-F1 threshold, paired day-block bootstrap) and the baselines B0–B2 exist; `src/05_train.py` fits them on the A training split and writes `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 (timetable columns only) PR-AUC 0.528, ROC-AUC 0.797; B2 − B1 = +0.015 PR-AUC with the interval above zero. The script never loads test-period rows. Tests: 63 passed. The EDA notebook (`notebooks/01_eda.ipynb`, training and validation period only) and its 12 figures exist. The proposal draft is in `docs/proposal_draft.md`. Branches `02-clean`, `03-baselines`, `04-eda` and `05-proposal` (each built on the previous one) are to merge; merging `05-proposal` brings all four. Tests: 64 passed. **Next action:** `03_enrich` (weather, public and Bavarian school holidays), then `04_features`.
 
 **Now (week 2, until 17 Nov)** — in this order
 
@@ -233,6 +233,7 @@ pds-db-delays/
 - [x] `02_clean` with `exclude_reason`, `is_through`, `has_prev_stop` + tests + `cleaning_counts.csv` per split (D19, D20) — 10 Nov; branch `02-clean` to merge
 - [x] `src/evaluate.py` (metrics, day-block bootstrap, tests) + baselines B0, B1, B2 on validation (D22) — 10 Nov; branch `03-baselines` to merge
 - [x] EDA notebook: core figures only (delay by service, hour, month; cancellations; coverage; rows without plan record) — 10 Nov, `notebooks/01_eda.ipynb`, 12 figures in `reports/figures/`; branch `04-eda` to merge
-- [ ] Draft the two-page proposal; collect 6–10 related-work references; ask the supervisor about the GenAI documentation with the proposal
+- [x] Draft the two-page proposal — 10 Nov, `docs/proposal_draft.md` (names and matriculation numbers still to fill in; question about the GenAI documentation is attached); branch `05-proposal` to merge
+- [ ] Collect 6–10 related-work references on train delay prediction
 
 **Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` (weather, public and Bavarian school holidays); `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.

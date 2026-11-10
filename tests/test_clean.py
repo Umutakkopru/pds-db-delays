@@ -14,6 +14,7 @@ import pandas as pd
 import pytest
 
 import config
+import features_config
 
 clean_step = importlib.import_module("02_clean")  # module name starts with a digit
 
@@ -215,3 +216,11 @@ def test_output_line_ids_are_stable_over_the_format_change():
     assert df["line_id"].str.fullmatch(r"(RE|RB)\d{1,2}").all(), sorted(df["line_id"])
     lost = df[(df["before"] > 1000) & (df["after"] == 0)]
     assert lost.empty, lost
+
+
+@needs_output
+def test_output_every_column_is_classified():
+    columns = set(_q("SELECT * FROM {f} LIMIT 0").columns)
+    known = (features_config.FORBIDDEN_COLUMNS | features_config.ALLOWED_RAW_INPUTS
+             | features_config.ALLOWED_DERIVED_INPUTS)
+    assert not (columns - known), f"Unclassified columns in the clean table: {sorted(columns - known)}"
