@@ -35,7 +35,7 @@ Outputs of step 1: `data/interim/wuerzburg_YYYY-MM.parquet` (Würzburg rows plus
 
 ```bash
 # Data checks (after step 1); results in reports/checks/
-python checks/coverage_check.py      # earlier-stop coverage per period (downloads 5 sample months if missing)
+python checks/coverage_check.py      # earlier-stop coverage per period (needs the raw files of 5 sample months in data/raw)
 python checks/category_check.py      # train types and line numbers over time
 python checks/data_quality_check.py  # duplicates, cancellations, collection gaps
 ```

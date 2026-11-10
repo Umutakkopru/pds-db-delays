@@ -13,12 +13,17 @@ Writes: reports/checks/line_types_over_time.csv (printed as well)
 Run: python checks/category_check.py
 """
 from pathlib import Path
+import sys
+
 import duckdb
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-FILES = str(ROOT / "data" / "interim" / "wuerzburg_*.parquet").replace("'", "''")
-OUT = ROOT / "reports" / "checks"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import config  # noqa: E402  (shared paths and constants)
+
+FILES = str(config.DATA_INTERIM / "wuerzburg_*.parquet").replace("'", "''")
+OUT = config.CHECKS
+OUT.mkdir(parents=True, exist_ok=True)
 pd.set_option("display.width", 200)
 pd.set_option("display.max_rows", 200)
 
