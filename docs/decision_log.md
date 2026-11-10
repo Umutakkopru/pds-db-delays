@@ -2,7 +2,7 @@
 
 > Read this file (rule "Read-when" in `CLAUDE.md`) before making or changing a data or method decision, before writing the Data or Methodology section, and whenever a number has to be traced to its source.
 
-Purpose: a chronological record of every data and method decision, with the question, the evidence, the decision and where it goes in the report. Every number here is traceable to a script and an output file in this repository. The report's Data and Methodology sections are written from this log.
+Purpose: a chronological record of every data and method decision, with the question, the evidence, the decision and where it goes in the report. Numbers here are traceable to a script and an output file in this repository, with three exceptions that the cleaning step (`02_clean`, `cleaning_counts.csv`) will replace: the D1 table (scripts in `../pds-db-check/`, outside the repository) and the counts in D13 and D16 (ad hoc DuckDB queries). All three were reproduced on 10 Nov 2026; the queries are in the appendix of `docs/audit_2026-11-10.md`. The report's Data and Methodology sections are written from this log.
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
