@@ -45,8 +45,9 @@ Key numbers (all 28 months, Würzburg Hbf):
 | Share of cancelled departures per month | 1.0% – 4.5% | same |
 | Duplicate ids across all files | 0 | `checks/data_quality_check.py` output |
 | Stations in the archive | 107–108 until 1 Nov 2025; ~5,300 from 2 Nov 2025 | `checks/coverage_check.py` output |
-| ARV rows in scenario A training period | 692 of 238,850 (Dec 2025 only) | `reports/checks/train_types_by_month.csv` |
-| ARV share of test-period rows | 17.1% | same |
+| ARV rows among all Würzburg rows (arrivals and departures) of the Jul 2024 – Dec 2025 files | 692 of 238,850 (Dec 2025 only) | `reports/checks/train_types_by_month.csv` |
+| ARV share of all Würzburg rows in the Jul – Oct 2026 files | 17.1% | same |
+| ARV among modelling rows (approximate cleaning rules): scenario A training departures; test departures | 330 of 152,421 (0.2%); 13.2% | `docs/audit_2026-11-10.md`, query Q6; final values from `02_clean` |
 
 ---
 
@@ -201,6 +202,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 - Delay rates of these lines are similar before and after (line 8: 12.4% → 15.4%, partly explained by construction work on RE 8 Würzburg–Lauda, 21 Dec 2025 – 6 Feb 2026; line 80: 8.9% → 7.0%).
 - **Line format** changes at the same time: "53" until November 2025, "RB53" from December 2025. In some 2026 rows `train_type` and the line prefix disagree (line RE10 with type RB).
 - ARV is almost absent in the scenario A training period (692 of 238,850 rows) but 17.1% of test-period rows: a raw `train_type` feature would meet an unseen category in the test set.
+  - *Correction (10 Nov 2026, audit C-01):* these two numbers count all Würzburg rows (arrivals and departures, by source file). Among the departures the models see it is 330 of 152,421 training departures (0.2%) and 13.2% of test departures. The conclusion is unchanged.
 - **IC** disappears after October 2025 (~150 → 0 per month).
 
 **Decision.**
@@ -308,7 +310,7 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 **Question.** Which grouping does the rule-based baseline use, and which data may history features see?
 
 **Decision.**
-- **B1 = historical delay rate of `service` × planned hour** (training data only). Raw `train_type` is not used, because ARV is almost absent from the training period but 17% of test rows (D7).
+- **B1 = historical delay rate of `service` × planned hour** (training data only). Raw `train_type` is not used, because ARV is almost absent from the training period but 13% of test departures (17% of all test-period Würzburg rows; D7, corrected 10 Nov 2026).
 - **History window:** for a departure on day D, departures planned in [D − 29, D − 1 00:00). Scenario A is asked the day before, so day D − 1 is not complete at prediction time. The time-travel test truncates the data at D − 1 00:00.
 - **Keys and fallback:** train number → `line_id` (regional) or route group (ICE, origin/destination direction) → `service`, used when a cell has too few departures in the window.
 - **`train_number` is not a model feature** (high cardinality, can change at the December timetable change); added to `FORBIDDEN_COLUMNS` in `src/features_config.py`. It remains a key for history rates.

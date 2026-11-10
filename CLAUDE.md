@@ -187,7 +187,7 @@ pds-db-delays/
 - A monthly file can contain rows planned on the last day of the previous month (Oct 2026: 2 ICE rows on 30 Sep); `source_month` is stored; cleaning drops duplicate ids.
 - ICE rows have no `line_number` (~22.5% of rows); `train_type` is NaN for some rows (no planned times; removed by cleaning) and has odd values such as `RE8`.
 - Bus rows are rail replacement (lines EV, SEV, or the replaced line such as RE7/RB80; up to 1,884 rows in Jul 2024): excluded and counted. IC disappears after Oct 2025 (→ `long_distance`).
-- Line format changes in Dec 2025 ("53" → "RB53"); ARV appears in Dec 2025 (692 of 238,850 rows in A training, 17.1% of test rows): never use raw `train_type` as a feature.
+- Line format changes in Dec 2025 ("53" → "RB53"); ARV appears in Dec 2025. Among all Würzburg rows (arrivals and departures, by source file) it is 692 of 238,850 in Jul 2024 – Dec 2025 and 17.1% in Jul – Oct 2026; among modelling rows (approximate cleaning rules) 330 of 152,421 A training departures and 13.2% of test departures. Never use raw `train_type` as a feature.
 - `check_db.py` (outside the repo) saved only Würzburg rows; scenario B needs the earlier stops from `data/interim/`.
 - The share of exactly-on-time departures rises from ~34% (2024) to ~42% (2026); show in the EDA. If errors cluster in single time blocks, re-check collection gaps (D11).
 
