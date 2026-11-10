@@ -52,7 +52,7 @@ Proposed plan (to be agreed by the group): code and results frozen by **1 Dec 20
 | # | Decision |
 | --- | --- |
 | D1 | Topic: DB departure delays at Würzburg Hbf; fallback topic German electricity demand |
-| D2 | Target `delayed = 1` if departure delay ≥ 6 min (DB punctuality threshold); classification, not regression (skewed delays) |
+| D2 | Target `delayed = 1` if departure delay ≥ 6 min (DB's punctuality threshold, which DB defines for arrivals, applied here to departures); classification, not regression (skewed delays) |
 | D3 | Scenario A before the trip, scenario B en route; B applies only to through trains |
 | D4 | Chronological split, test = Jul – Oct 2026 for both scenarios; test used once |
 | D5 | LightGBM as main model (tabular data, interactions, NaN and categories, fast, SHAP) |

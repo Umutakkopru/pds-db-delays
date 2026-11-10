@@ -117,6 +117,7 @@ Example of delay propagation: on 6 Oct 2026 an RB53 was 18 min late at Oberhaid 
 
 **Why.**
 - 6 minutes is Deutsche Bahn's official punctuality threshold (a train is punctual if it is less than 6 minutes late), so the threshold is not arbitrary.
+  - *Clarification (10 Nov 2026, audit E-03):* DB defines punctuality on arrivals (a stop is punctual if the planned arrival time is exceeded by less than 6 minutes). We apply the same threshold to departures, because a passenger waiting at Würzburg experiences the departure. The report says so explicitly. Times in the data have no seconds, so "≥ 6 min" equals DB's "more than 5:59".
 - The delay distribution is highly skewed (Oct 2026: median 1 min, mean 5.2 min, maximum 396 min). A regression would be dominated by rare extreme delays; the passenger's question ("will I make my connection?") is binary.
 - `delay_in_min` matches the departure time difference in 100% of rows and the arrival difference in only 61.9%, so it is a departure delay, but computing the target ourselves makes the definition explicit.
 
@@ -357,6 +358,7 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 ## Sources
 
 - Deutsche Bahn Data, Hugging Face: https://huggingface.co/datasets/piebro/deutsche-bahn-data (CC BY 4.0)
+- Deutsche Bahn, "Erläuterung Pünktlichkeitswerte" (definition of punctuality on arrivals): https://www.deutschebahn.com/de/konzern/konzernprofil/zahlen_fakten/puenktlichkeitswerte-1187696
 - deutsche-bahn-data project (collection method, coverage, changelog): https://github.com/piebro/deutsche-bahn-data
 - Arverio: https://en.wikipedia.org/wiki/Arverio
 - Arverio BW construction notice RE 8, 21 Dec 2025 – 6 Feb 2026: https://www.arverio-bw.de/fileadmin/user_upload/Arverio_Baden-Wuerttemberg/Fahrplanabweichungen/141b_ABW_UPDATE_Baustelle_RE8_21.12.-06.02.26_Wuerzburg-Lauda.pdf

@@ -2,7 +2,7 @@
 
 Practical Data Science capstone, Information Systems M.Sc., University of Würzburg, WiSe 2026/27 (Group 18).
 
-We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsche Bahn's punctuality threshold), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Start here: [`docs/project_plan.md`](docs/project_plan.md) (course requirements, timeline, roles), [`docs/decision_log.md`](docs/decision_log.md) (data and method decisions with evidence), [`CLAUDE.md`](CLAUDE.md) (working rules and current status, also read by AI assistants).
+We predict whether a train departs Würzburg Hbf 6 or more minutes late (the threshold of Deutsche Bahn's punctuality statistic, applied to departures), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Start here: [`docs/project_plan.md`](docs/project_plan.md) (course requirements, timeline, roles), [`docs/decision_log.md`](docs/decision_log.md) (data and method decisions with evidence), [`CLAUDE.md`](CLAUDE.md) (working rules and current status, also read by AI assistants).
 
 **Data:** [Deutsche Bahn Data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) (CC BY 4.0, Deutsche Bahn), July 2024 – October 2026.
 
