@@ -128,7 +128,7 @@ Example of delay propagation: on 6 Oct 2026 an RB53 was 18 min late at Oberhaid 
 **Question.** At which moment is the prediction made, and which information is allowed?
 
 **Decision.**
-- Scenario A, before the trip (asked the day before): timetable, train type/line, destination, calendar, holidays, weather, historical delay rates.
+- Scenario A, before the trip (asked the day before): timetable, service and line (`service`, `line_id`; not the raw `train_type`, see D7), destination, calendar, holidays, weather, historical delay rates.
 - Scenario B, en route (asked when the train leaves its previous stop): everything in A plus the delay at stops the train has already passed.
 
 **Why.** Delays propagate along a route (6 Oct 2026: an RB53 was 18 min late at Oberhaid and still 13 min late at Würzburg Hbf). Comparing A and B answers a research question of its own: how much of a delay is predictable in advance, and how much builds up on the way?
@@ -154,9 +154,9 @@ Example of delay propagation: on 6 Oct 2026 an RB53 was 18 min late at Oberhaid 
 
 ## D5 Model choice (6 Nov 2026)
 
-**Decision.** Baselines: B0 majority class, B1 historical delay rate of train type × hour, B2 logistic regression. Main model: LightGBM (scenario A and B). Optional: Random Forest as a check.
+**Decision.** Baselines: B0 majority class, B1 historical delay rate of service × hour (originally "train type × hour"; changed by D14 because of D7), B2 logistic regression. Main model: LightGBM (scenario A and B). Optional: Random Forest as a check.
 
-**Why LightGBM.** The data is tabular; gradient-boosted trees are the established strong choice for tabular data (Grinsztajn et al., 2022). They learn interactions (e.g. long-distance train × Friday evening × rain) without hand-built terms, handle missing values (no earlier stop) and categorical features natively, train in seconds on ~365,000 rows, and SHAP's TreeExplainer gives exact explanations for the report and the dashboard.
+**Why LightGBM.** The data is tabular; gradient-boosted trees are the established strong choice for tabular data (Grinsztajn et al., 2022). They learn interactions (e.g. long-distance train × Friday evening × rain) without hand-built terms, handle missing values (no earlier stop) and categorical features natively, train in seconds on ~230,000 rows (the modelling rows; 365,502 is the number of all Würzburg rows), and SHAP's TreeExplainer gives exact explanations for the report and the dashboard.
 
 **Not taken on faith.** LightGBM is only called better if the 95% interval of its PR-AUC difference to B2 lies above zero (paired day-block bootstrap; revised 7 Nov 2026, see D13; the original criterion was non-overlapping confidence intervals). Alternatives considered: XGBoost/CatBoost (same family, no clear advantage), Random Forest (usually slightly weaker), neural networks (more effort, harder to explain, no expected gain on this data).
 
