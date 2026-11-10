@@ -127,7 +127,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 **Safeguards**
 
 1. **Feature whitelist and forbidden list** (`src/features_config.py`): models use only whitelisted columns; `FORBIDDEN_COLUMNS` holds change times, delays, target, cancellation flags, ids, `time`, `train_number`, disruption flags, `source_month`, `row_role`.
-2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features; no propagation features in A; splits chronological and disjoint; same test period; B starts at full coverage; DST days. **To add:** with `02` — ids unique, only Würzburg rows, no bus/DST/cancelled rows; with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only.
+2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features; no propagation features in A; splits chronological and disjoint; same test period; B starts at full coverage; DST days. **To add:** with `02` — ids unique, only Würzburg rows, no bus/DST/cancelled rows; with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
 3. **Sanity checks on results:** each single feature clearly below ROC-AUC 0.9; shuffled target → ROC-AUC ≈ 0.5; validation and test in the same range; SHAP top features make domain sense (not IDs or timestamps).
 4. **Second pair of eyes:** a second member reviews feature and split code; an AI review ("Check this code for data leakage against the leakage rules in CLAUDE.md") is extra, not a replacement.
 
@@ -143,13 +143,13 @@ Why: start = first month in the archive (two winters); end = last complete month
 | M-B | LightGBM, B features | B train | Main model, en route |
 
 1. Tuning (time-boxed small grid), number of trees (early stopping) and threshold are chosen with training-only models on validation. No class weighting (`is_unbalance`, `scale_pos_weight`): probabilities must stay calibrated.
-2. Final models are refitted on training + validation with those settings, then **all models are scored once on the test set at the same time**. Nothing changes after seeing test results.
+2. Final models are refitted on training + validation with those settings, then **all models are scored once on the test set at the same time**. Nothing changes after seeing test results. Until then features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data, and no further label statistics are computed on the test period.
 3. Same rows for all models: A on all test departures; M-A, M-A′ and M-B also on the identical through-train subset. Propagation effect = M-B − M-A′.
 4. Uncertainty: 1,000 bootstrap resamples **of whole days**; a model is better only if the 95% interval of the paired metric difference lies above zero.
 5. Slices: service, line (incl. 8 and 80), hour, weekday, month, holiday, weather; scenario B also by minutes from the previous stop (< 10, 10–30, > 30). Confusion matrix; 20 largest errors grouped into failure types; cancellation sensitivity check.
 6. SHAP global (M-A, M-B) and per prediction (dashboard).
 
-Results table (`reports/results.md`, written by `05_train.py`): Model | Scenario | PR-AUC [95% CI] | ROC-AUC [95% CI] | F1 | Precision | Recall | Brier — rows B0, B1, B2, M-A, M-A′, M-B.
+Results table (`reports/results.md`, written by `05_train.py`): Model | Scenario | Rows (n) | Base rate | PR-AUC [95% CI] | ROC-AUC [95% CI] | F1 | Precision | Recall | Brier — rows B0, B1, B2, M-A, M-A′, M-B. Row sets with different base rates are not compared with each other (through trains are delayed more often than all departures: 36% vs 24% in the B training window).
 
 ## Environment and conventions
 
