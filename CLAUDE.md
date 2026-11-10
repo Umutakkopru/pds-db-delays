@@ -127,7 +127,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 **Safeguards**
 
 1. **Feature whitelist and forbidden list** (`src/features_config.py`): models use only whitelisted columns; `FORBIDDEN_COLUMNS` holds change times, delays, target, cancellation flags, ids, `time`, `train_number`, disruption flags, `source_month`, `row_role`.
-2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features; no propagation features in A; splits chronological and disjoint; same test period; B starts at full coverage; DST days. **To add:** with `02` — ids unique, only Würzburg rows, no bus/DST/cancelled rows; with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
+2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features (name check only; passes trivially while the lists are empty); no propagation features in A (`prev_` prefix); splits chronological and disjoint; same test period; B starts at full coverage (literal date and data check); DST days; filter SQL on a small fixture (12-hour window, midnight, ride id on two days); local row counts equal `monthly_summary.csv`; every raw column is classified as allowed or forbidden. **To add:** with `02` — ids unique, only Würzburg rows, no bus/DST/cancelled rows; with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
 3. **Sanity checks on results:** each single feature clearly below ROC-AUC 0.9; shuffled target → ROC-AUC ≈ 0.5; validation and test in the same range; SHAP top features make domain sense (not IDs or timestamps).
 4. **Second pair of eyes:** a second member reviews feature and split code; an AI review ("Check this code for data leakage against the leakage rules in CLAUDE.md") is extra, not a replacement.
 
@@ -212,12 +212,15 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (7 Nov 2026).** Week 1 nearly done: all 28 months downloaded and filtered; coverage (`reports/checks/coverage_by_month.csv`), category and data-quality checks done; rules for cleaning, cancellations and time zone fixed; no days excluded; evaluation protocol refined (D13–D16); this file split (details in `docs/project_plan.md`). Tests: 10 passed, 1 skipped by design. **Next action:** write `src/02_clean.py` (+ `src/sql/02_clean.sql`) and save `data/processed/wuerzburg_clean.parquet`.
+**Current status (7 Nov 2026).** Week 1 nearly done: all 28 months downloaded and filtered; coverage (`reports/checks/coverage_by_month.csv`), category and data-quality checks done; rules for cleaning, cancellations and time zone fixed; no days excluded; evaluation protocol refined (D13–D16); this file split (details in `docs/project_plan.md`). **Audit (10 Nov 2026):** independent review of the whole project in `docs/audit_2026-11-10.md` (37 findings, none critical; fixes on branch `audit-2026-11-10`): dataset revision fixed in `config.py`, tests extended (filter SQL, data, configuration), check scripts and several numbers corrected; five points wait for a group decision. Tests: 26 passed. **Next action:** write `src/02_clean.py` (+ `src/sql/02_clean.sql`) and save `data/processed/wuerzburg_clean.parquet`.
 
 **Now (week 1–2, until 17 Nov)**
 
 - [ ] **Register the group by 15 Nov** (all three members found; registration in the course room still to do)
 - [ ] Share `docs/project_plan.md`, `docs/decision_log.md` and `CLAUDE.md` with both members and get agreement (incl. D13–D16)
+- [ ] Decide the five open points of the audit in the group (`docs/audit_2026-11-10.md`: E-01 baseline for scenario B, E-02 rows without plan record, E-04 through-train definition, E-08 weather ablation, E-09 refit details)
+- [ ] Review and merge branch `audit-2026-11-10` into `main`
+- [ ] Collect 6–10 related-work references on train delay prediction; ask the supervisor how detailed the GenAI documentation must be (with the proposal)
 - [ ] Push the repository to GitHub and add collaborators; download the chair's report template
 - [ ] `02_clean` + tests + `cleaning_counts.csv`
 - [ ] EDA notebook

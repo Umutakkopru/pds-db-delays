@@ -131,6 +131,8 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. Ea
 - [x] `checks/data_quality_check.py` sections 1–4: 0 duplicate ids; change time never empty; 2 low-count days; full coverage from 3 Nov 2025; 11 "too punctual" days, all holidays/Sundays → no days excluded
 - [x] `docs/decision_log.md` D1–D12 (7 Nov)
 - [x] Plan review (7 Nov): D13 evaluation protocol, D14 baseline and history definitions, D15 dashboard replay, D16 disruption flags forbidden; CLAUDE.md split into CLAUDE.md + this file
+- [x] Independent audit (10 Nov): `docs/audit_2026-11-10.md`, 37 findings, fixes on branch `audit-2026-11-10`
+- [ ] Decide the five open audit points in the group (E-01, E-02, E-04, E-08, E-09); merge the audit branch
 - [ ] Share `docs/project_plan.md`, `docs/decision_log.md` and `CLAUDE.md` with both members and get agreement (incl. D13–D16)
 - [ ] Write the cleaning step and save `wuerzburg_clean.parquet`
 

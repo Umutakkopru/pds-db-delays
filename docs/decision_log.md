@@ -356,7 +356,8 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 | Coverage check | `checks/coverage_check.py` | `reports/checks/coverage_by_month.csv` |
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
-| Leakage and config tests | `tests/test_leakage.py`, `tests/test_config.py` | 10 passing (1 skipped by design) |
+| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py` | 26 passing (10 Nov 2026) |
+| Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources
 
