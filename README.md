@@ -30,6 +30,9 @@ python src/01_download.py
 # 3. Clean: one row per planned departure, target, exclusion reasons
 python src/02_clean.py
 
+# 4. Baselines B0-B2 on the validation split (the test period is not touched)
+python src/05_train.py
+
 # Whole pipeline (steps that exist so far)
 python run_pipeline.py
 ```
@@ -47,7 +50,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05` (steps `01` and `02` exist; `03`–`05` are planned), `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`05` (steps `01`, `02` and the baseline part of `05` exist; `03` and `04` are planned), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
 | `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
@@ -55,7 +58,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 | `notebooks/` | EDA only, no pipeline logic |
 | `app/` | Streamlit dashboard (planned) |
 | `models/` | Saved models (planned) |
-| `reports/` | Data checks (`reports/checks/`); results table and figures (planned) |
+| `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`); final results table and figures (planned) |
 | `data/` | Raw, interim and processed data (not in Git) |
 
 ## AI use

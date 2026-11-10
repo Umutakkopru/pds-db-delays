@@ -58,6 +58,9 @@ FULL_COVERAGE_START = "2025-11-03"
 
 SEED = 42
 
+# Uncertainty: number of bootstrap resamples of whole days (decision log D13).
+BOOTSTRAP_N = 1000
+
 # Chronological splits as half-open intervals [start, end) on the planned
 # departure time at Würzburg Hbf. Test period is identical for A and B.
 SPLITS = {

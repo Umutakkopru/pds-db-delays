@@ -460,7 +460,8 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
-| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py`, `tests/test_clean.py` | 49 passing (10 Nov 2026) |
+| Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0, B1, B2 on the A validation split, 1,000 day resamples) |
+| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py`, `tests/test_clean.py`, `tests/test_evaluate.py` | 63 passing (10 Nov 2026) |
 
 ## Sources
 

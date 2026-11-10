@@ -149,8 +149,8 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [ ] Register the group by 15 Nov 2026 (hard deadline)
 - [ ] Merge the audit branch, push to GitHub, download the chair's template
 - [x] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
-- [ ] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
-- [ ] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table
+- [x] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
+- [x] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table (`reports/results_validation.md`, 10 Nov; B2 gets holidays after step 03)
 - [ ] EDA notebook, core figures: delay by service, hour, weekday, month; cancellations; coverage; rows without timetable record
 - [ ] Draft the two-page proposal (numbers from `cleaning_counts.csv`); first 6–10 related-work references
 - **Result of the week:** clean table, validation scores of three baselines, proposal draft
