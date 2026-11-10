@@ -208,6 +208,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 
 **Decision.**
 - `line_id`: line prefix when present ("RB53", "RE8"); otherwise `train_type` + digits for RE/RB rows before December 2025; ARV rows keep their line; NULL for long-distance trains. To verify while cleaning: the RE/RB label of a train number before December 2025 matches its line prefix after.
+  - *Correction (10 Nov 2026, audit E-07):* the line format is not a clean function of the date. Among modelling rows, 2,442 departures from 1 Dec 2025 on have digit-only lines (December 2025 is mixed; August 2026 has some again) and 825 departures before December 2025 already carry a prefix. The rule is therefore applied by format (prefix present or not), not by date. From December 2025, 1,901 departures have type RB with a line starting with RE; which label wins is still to be settled with the planned `train_number` check.
 - `service`: long_distance (ICE, IC, EC), night (NJ, EN), regional (RE, RB, ARV), other.
 - `train_type` kept for reporting only, not as a model feature.
 - ICE rows have no line number (22.6–30.7% of the Würzburg rows per month have none); for ICE the train number or route is used instead.
