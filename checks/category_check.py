@@ -13,12 +13,17 @@ Writes: reports/checks/line_types_over_time.csv (printed as well)
 Run: python checks/category_check.py
 """
 from pathlib import Path
+import sys
+
 import duckdb
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-FILES = str(ROOT / "data" / "interim" / "wuerzburg_*.parquet").replace("'", "''")
-OUT = ROOT / "reports" / "checks"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import config  # noqa: E402  (shared paths and constants)
+
+FILES = str(config.DATA_INTERIM / "wuerzburg_*.parquet").replace("'", "''")
+OUT = config.CHECKS
+OUT.mkdir(parents=True, exist_ok=True)
 pd.set_option("display.width", 200)
 pd.set_option("display.max_rows", 200)
 
@@ -36,14 +41,16 @@ con.execute(f"""
 print("\n=== 1. Which train types run each line number? (Oct 2025 vs Mar 2026) ===")
 lines = con.sql("""
     SELECT line_digits,
-           string_agg(DISTINCT CASE WHEN source_month = '2025-10' THEN train_type || ':' || line_number END, ', ') AS oct_2025,
-           string_agg(DISTINCT CASE WHEN source_month = '2026-03' THEN train_type || ':' || line_number END, ', ') AS mar_2026,
+           string_agg(DISTINCT CASE WHEN source_month = '2025-10' THEN train_type || ':' || line_number END, ', '
+                      ORDER BY CASE WHEN source_month = '2025-10' THEN train_type || ':' || line_number END) AS oct_2025,
+           string_agg(DISTINCT CASE WHEN source_month = '2026-03' THEN train_type || ':' || line_number END, ', '
+                      ORDER BY CASE WHEN source_month = '2026-03' THEN train_type || ':' || line_number END) AS mar_2026,
            COUNT(*) FILTER (WHERE source_month = '2025-10') AS n_oct_2025,
            COUNT(*) FILTER (WHERE source_month = '2026-03') AS n_mar_2026
     FROM w
     WHERE train_type IN ('RE', 'RB', 'ARV') AND line_digits <> ''
     GROUP BY line_digits
-    ORDER BY n_mar_2026 + n_oct_2025 DESC
+    ORDER BY n_mar_2026 + n_oct_2025 DESC, line_digits
 """).df()
 print(lines.to_string(index=False))
 lines.to_csv(OUT / "line_types_over_time.csv", index=False)
@@ -53,7 +60,7 @@ print(con.sql("""
     WITH arv_lines AS (SELECT DISTINCT line_digits FROM w WHERE train_type = 'ARV' AND line_digits <> '')
     SELECT line_digits,
            CASE WHEN source_month < '2025-12' THEN '1 before Dec 2025' ELSE '2 from Dec 2025' END AS period,
-           string_agg(DISTINCT train_type, '/') AS types,
+           string_agg(DISTINCT train_type, '/' ORDER BY train_type) AS types,
            COUNT(*) AS departures,
            ROUND(100 * AVG(CASE WHEN dep_delay >= 6 THEN 1 ELSE 0 END), 1) AS pct_delayed_6
     FROM w
@@ -68,8 +75,8 @@ print(con.sql("""
            COUNT(*) AS n,
            COUNT(*) FILTER (WHERE departure_planned_time IS NOT NULL) AS with_planned_dep,
            COUNT(*) FILTER (WHERE has_plan_record) AS with_plan_record,
-           string_agg(DISTINCT line_number, ', ') AS lines,
-           string_agg(DISTINCT final_destination_station, ', ') AS destinations
+           string_agg(DISTINCT line_number, ', ' ORDER BY line_number) AS lines,
+           string_agg(DISTINCT final_destination_station, ', ' ORDER BY final_destination_station) AS destinations
     FROM w WHERE train_type IS NULL
     GROUP BY 1 ORDER BY 1
 """).df().to_string(index=False))
@@ -77,7 +84,7 @@ print(con.sql("""
 print("\n=== 4. Bus rows (replacement buses?) ===")
 print(con.sql("""
     SELECT source_month, COUNT(*) AS n,
-           string_agg(DISTINCT line_number, ', ') AS lines,
+           string_agg(DISTINCT line_number, ', ' ORDER BY line_number) AS lines,
            ROUND(100 * AVG(CASE WHEN is_replacement_train THEN 1 ELSE 0 END), 1) AS pct_replacement_flag
     FROM w WHERE train_type = 'Bus'
     GROUP BY 1 ORDER BY 1

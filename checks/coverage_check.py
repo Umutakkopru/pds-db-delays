@@ -5,42 +5,41 @@ Question: for trains that ARRIVE at Würzburg Hbf and depart again, do the
 earlier stops of the same trip exist in the data? Is this different before
 and after November 2025, when the archive expanded to all stations?
 
-Reads:  monthly DB files in data/raw/monthly_processed_data/ (downloaded from
-        Hugging Face if missing; deleted again unless --keep is given)
+Reads:  monthly DB files in data/raw/monthly_processed_data/ (downloaded by
+        src/01_download.py; this script never downloads or deletes data)
 Writes: reports/checks/coverage_by_month.csv
 
-Run:    python coverage_check.py
-        python coverage_check.py --months 2025-10 2025-11 --keep
+Note: the 12-hour window here ends at the Würzburg planned DEPARTURE; the
+pipeline (src/sql/01_filter_month.sql) uses the planned ARRIVAL. The numbers
+in the decision log (D6) come from this script.
+
+Run:    python checks/coverage_check.py
+        python checks/coverage_check.py --months 2025-10 2025-11
 """
 from pathlib import Path
 import argparse
+import sys
 
 import duckdb
 import pandas as pd
 
-HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
-RAW = ROOT / "data" / "raw"
-STATION = "Würzburg Hbf"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import config  # noqa: E402  (shared paths and constants)
+
+STATION = config.STATION
 # Old period (100 largest stations) vs. new period (all stations).
 DEFAULT_MONTHS = ["2024-07", "2025-03", "2025-10", "2025-11", "2026-10"]
 
 
-def get_file(month: str) -> tuple[Path, bool]:
-    """Return the local path of a monthly file and whether it was downloaded now."""
-    name = f"data-{month}.parquet"
-    for candidate in (RAW / "monthly_processed_data" / name,):
-        if candidate.exists():
-            return candidate, False
-    from huggingface_hub import hf_hub_download
-    print(f"  downloading {name} (large file, may take a few minutes) ...")
-    path = hf_hub_download(
-        repo_id="piebro/deutsche-bahn-data",
-        repo_type="dataset",
-        filename=f"monthly_processed_data/{name}",
-        local_dir=RAW,
-    )
-    return Path(path), True
+def get_file(month: str) -> Path:
+    """Return the local path of a monthly raw file; stop if it is missing."""
+    path = config.DATA_RAW / config.HF_FOLDER / f"data-{month}.parquet"
+    if not path.exists():
+        sys.exit(
+            f"{path} is missing. Download it with the pipeline step first:\n"
+            f"  python src/01_download.py --months {month} --force"
+        )
+    return path
 
 
 # Step 1: how many distinct stations does the month contain?
@@ -120,9 +119,8 @@ ORDER BY num
 """
 
 
-def check_month(con: duckdb.DuckDBPyConnection, month: str, keep: bool) -> pd.DataFrame:
-    path, downloaded = get_file(month)
-    f = str(path)
+def check_month(con: duckdb.DuckDBPyConnection, month: str) -> pd.DataFrame:
+    f = str(get_file(month)).replace("'", "''")
     print(f"\n=== {month} ===")
 
     n_st = con.sql(STATIONS_SQL.format(f=f)).fetchone()[0]
@@ -140,22 +138,19 @@ def check_month(con: duckdb.DuckDBPyConnection, month: str, keep: bool) -> pd.Da
         stops = con.sql(EXAMPLE_STOPS_SQL.format(f=f, ride=ride, w_dep=w_dep)).df()
         print(stops.to_string(index=False))
 
-    if downloaded and not keep:
-        path.unlink()
-        print(f"(deleted {path.name})")
     return cov
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--months", nargs="+", default=DEFAULT_MONTHS)
-    parser.add_argument("--keep", action="store_true", help="keep downloaded files")
     args = parser.parse_args()
 
     con = duckdb.connect()
-    result = pd.concat([check_month(con, m, args.keep) for m in args.months], ignore_index=True)
+    result = pd.concat([check_month(con, m) for m in args.months], ignore_index=True)
 
-    out = ROOT / "reports" / "checks" / "coverage_by_month.csv"
+    config.CHECKS.mkdir(parents=True, exist_ok=True)
+    out = config.CHECKS / "coverage_by_month.csv"
     result.to_csv(out, index=False)
 
     print("\n=== Summary: % of arriving trains with at least one earlier stop ===")

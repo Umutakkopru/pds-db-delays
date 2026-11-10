@@ -2,7 +2,7 @@
 
 Practical Data Science capstone, Information Systems M.Sc., University of Würzburg, WiSe 2026/27 (Group 18).
 
-We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsche Bahn's punctuality threshold), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Start here: [`docs/project_plan.md`](docs/project_plan.md) (course requirements, timeline, roles), [`docs/decision_log.md`](docs/decision_log.md) (data and method decisions with evidence).
+We predict whether a train departs Würzburg Hbf 6 or more minutes late (the threshold of Deutsche Bahn's punctuality statistic, applied to departures), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Start here: [`docs/project_plan.md`](docs/project_plan.md) (course requirements, timeline, roles), [`docs/decision_log.md`](docs/decision_log.md) (data and method decisions with evidence).
 
 **Data:** [Deutsche Bahn Data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) (CC BY 4.0, Deutsche Bahn), July 2024 – October 2026.
 
@@ -12,10 +12,11 @@ We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsch
 brew install libomp                 # needed by LightGBM on macOS
 python3.10 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip freeze > requirements-lock.txt  # once; commit the lock file
-pytest                              # leakage tests must pass
+pip install -r requirements-lock.txt  # exact versions (built with Python 3.10), same for every member
+pytest                                # all tests must pass
 ```
+
+`requirements.txt` lists the direct dependencies with minimum versions. Only when a dependency is added or updated on purpose: `pip install -r requirements.txt`, then `pip freeze > requirements-lock.txt`, and commit both files.
 
 ## Run
 
@@ -34,7 +35,7 @@ Outputs of step 1: `data/interim/wuerzburg_YYYY-MM.parquet` (Würzburg rows plus
 
 ```bash
 # Data checks (after step 1); results in reports/checks/
-python checks/coverage_check.py      # earlier-stop coverage per period (downloads 5 sample months if missing)
+python checks/coverage_check.py      # earlier-stop coverage per period (needs the raw files of 5 sample months in data/raw)
 python checks/category_check.py      # train types and line numbers over time
 python checks/data_quality_check.py  # duplicates, cancellations, collection gaps
 ```
@@ -43,15 +44,15 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05`, `config.py` (paths, splits, seed), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`05` (step `01` exists; `02`–`05` are planned), `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
-| `tests/` | Leakage and configuration tests, run before every training run |
+| `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
 | `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
 | `notebooks/` | EDA only, no pipeline logic |
-| `app/` | Streamlit dashboard |
-| `models/` | Saved models |
-| `reports/` | Results table, figures, data checks |
+| `app/` | Streamlit dashboard (planned) |
+| `models/` | Saved models (planned) |
+| `reports/` | Data checks (`reports/checks/`); results table and figures (planned) |
 | `data/` | Raw, interim and processed data (not in Git) |
 
 ## AI use

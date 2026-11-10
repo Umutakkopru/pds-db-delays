@@ -16,12 +16,17 @@ Writes: reports/checks/quality_by_month.csv
 Run: python checks/data_quality_check.py
 """
 from pathlib import Path
+import sys
+
 import duckdb
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[1]
-FILES = str(ROOT / "data" / "interim" / "wuerzburg_*.parquet").replace("'", "''")
-OUT = ROOT / "reports" / "checks"
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import config  # noqa: E402  (shared paths and constants)
+
+FILES = str(config.DATA_INTERIM / "wuerzburg_*.parquet").replace("'", "''")
+OUT = config.CHECKS
+OUT.mkdir(parents=True, exist_ok=True)
 pd.set_option("display.width", 200)
 pd.set_option("display.max_rows", 200)
 
@@ -44,7 +49,12 @@ q1 = con.sql("""
            ROUND(100 * AVG(CASE WHEN NOT canceled AND departure_change_time IS NULL THEN 1 ELSE 0 END), 2) AS pct_no_change_time,
            ROUND(100 * AVG(CASE WHEN canceled THEN 1 ELSE 0 END), 2) AS pct_canceled,
            ROUND(100 * AVG(CASE WHEN NOT canceled AND
-                 (epoch(departure_change_time) - epoch(departure_planned_time)) / 60 >= 6 THEN 1 ELSE 0 END), 1) AS pct_delayed_6
+                 (epoch(departure_change_time) - epoch(departure_planned_time)) / 60 >= 6 THEN 1 ELSE 0 END), 1) AS pct_delayed_6,
+           -- pct_delayed_6 is a share of ALL planned departures (cancelled ones in the
+           -- denominator). The target's delay rate counts only departures that ran:
+           ROUND(100 * AVG(CASE WHEN NOT canceled THEN
+                 CASE WHEN (epoch(departure_change_time) - epoch(departure_planned_time)) / 60 >= 6 THEN 1.0 ELSE 0 END
+                 END), 1) AS pct_delayed_6_not_canceled
     FROM w GROUP BY 1 ORDER BY 1
 """).df()
 print(q1.to_string(index=False))
@@ -53,13 +63,15 @@ print("Duplicate ids across ALL files (Würzburg rows):",
 q1.to_csv(OUT / "quality_by_month.csv", index=False)
 
 print("\n=== 2. Days with unusually few planned departures (< 70% of the median for that weekday) ===")
-q2 = con.sql("""
+first_day = config.FIRST_MONTH + "-01"
+last_day = (pd.Timestamp(config.LAST_MONTH + "-01") + pd.offsets.MonthEnd(1)).date().isoformat()
+q2 = con.sql(f"""
     WITH d AS (SELECT dep_day, dayofweek(dep_day) AS dow, COUNT(*) AS n FROM w GROUP BY 1, 2),
     m AS (SELECT dow, MEDIAN(n) AS med FROM d GROUP BY dow)
     SELECT d.dep_day, d.n, m.med AS weekday_median, ROUND(d.n / m.med, 2) AS ratio
     FROM d JOIN m USING (dow)
     WHERE d.n < 0.7 * m.med
-      AND d.dep_day BETWEEN DATE '2024-07-01' AND DATE '2026-10-31'
+      AND d.dep_day BETWEEN DATE '{first_day}' AND DATE '{last_day}'
     ORDER BY d.dep_day
 """).df()
 print(q2.to_string(index=False) if len(q2) else "none")

@@ -29,6 +29,10 @@ FORBIDDEN_COLUMNS = {
     # high cardinality and may change at the December timetable change;
     # used only as a key for history rates (decision log D14)
     "train_number",
+    # raw labels that change over time (ARV relabel and line-format change in
+    # Dec 2025): models use `service` and `line_id` instead (decision log D7)
+    "train_type",
+    "line_number",
     # disruption flags filled from DB's change feed (known only once the
     # disruption happens): filters only, never features (decision log D16)
     "is_additional_stop",
@@ -40,6 +44,24 @@ FORBIDDEN_COLUMNS = {
     "source_month",
     "row_role",
 }
+
+# Raw columns of the archive that are not forbidden: they may be used to build
+# features, splits or joins. Every raw column must be in exactly one of the two
+# sets (tests/test_data.py), so a new upstream column cannot slip in unnoticed.
+ALLOWED_RAW_INPUTS = {
+    "station_name",
+    "xml_station_name",
+    "eva",
+    "final_destination_station",
+    "train_line_station_num",
+    "arrival_planned_time",
+    "departure_planned_time",
+}
+
+# Naming rule: every feature built from earlier stops of the same trip starts
+# with this prefix. tests/test_leakage.py uses it to keep such features out of
+# scenario A.
+PROPAGATION_PREFIX = "prev_"
 
 # Allowed feature columns per scenario (filled in week 3).
 FEATURES: dict[str, list[str]] = {

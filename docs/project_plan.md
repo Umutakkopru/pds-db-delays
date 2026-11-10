@@ -2,9 +2,9 @@
 
 > Read this file before working on the proposal, the report, the slides, grading questions, roles, the timeline, risks or extensions. Data and method decisions with evidence are in `docs/decision_log.md`.
 
-Last updated: 9 Nov 2026 · PDS Group 18
+Last updated: 10 Nov 2026 · PDS Group 18
 
-**Status of decisions (9 Nov 2026):** all decisions and the plan so far (D1–D16, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D22, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## 1. Assignment brief: key facts
 
@@ -20,7 +20,7 @@ To pass, we need a baseline plus at least one more approach, implemented with su
 | Final PDF report and all documentation | 18 Jan 2027, 23:59 |
 | Presentation (10 min per group) | 25 Jan 2027, 15:00 (room to be announced) |
 
-**Proposal must contain:** group members (name, matriculation number), working title and problem statement, dataset (source, size, license), target variable and evaluation metric, planned baseline and modelling approaches. Use the cleaned numbers from `02_clean.py` (≈230,000 non-cancelled departures, ≈23% delayed), not the raw row count.
+**Proposal must contain:** group members (name, matriculation number), working title and problem statement, dataset (source, size, license), target variable and evaluation metric, planned baseline and modelling approaches. Use the cleaned numbers from `02_clean.py` (≈230,000 non-cancelled departures, ≈25% delayed: 24.6% over all 28 months, 23.0% in the test period), not the raw row count.
 
 **Required subgoals:** problem definition and motivation; EDA; clean, reproducible data pipeline; simple interpretable baseline; at least one more advanced approach; evaluation on a held-out test set with suitable metrics and error analysis.
 
@@ -50,7 +50,7 @@ To pass, we need a baseline plus at least one more approach, implemented with su
 **Success criteria.**
 
 - **Pass:** B1, B2 and M-A trained and evaluated correctly on the chronological split, with a documented results table.
-- **Good grade:** M-A beats B2 on PR-AUC; M-B clearly beats M-A′ (same training window); error analysis and SHAP documented; dashboard deployed.
+- **Good grade:** M-A beats B2 on PR-AUC; M-B clearly beats M-A′ (same training window) and the persistence rule B3 (D17); error analysis and SHAP documented; dashboard deployed. If M-B does not beat B3 clearly, that is reported as a finding, not hidden.
 - **Red flag:** scenario A ROC-AUC above ~0.95, a failed leakage test, or any model far above the others without a clear reason → stop and run the leakage safeguards.
 
 ## 3. Why LightGBM (for proposal, report and presentation)
@@ -83,6 +83,8 @@ The app loads a saved model and a small table of test-period feature rows, never
 | Weather and holiday features | Hourly weather; Bavarian and neighbouring school holidays | Feature engineering | Core |
 | SHAP | Global importance plus per-prediction explanations (reused in the dashboard) | Explainability | Core |
 | Error analysis | Largest errors by service, hour, weather, day type, horizon; typical failure cases | Failure documentation | Core |
+| Sensitivity checks | Cancellations counted as delayed (D9); departures without timetable record included (D18) | Rigour | Core |
+| Weather ablation | M-A without weather features, on validation (D21) | Rigour | If time allows (dropped first) |
 | Calibration and robustness | Reliability diagram; performance by season (validation) and weather extremes | Rigour | If time allows |
 | Random Forest check | Same features as M-A; confirms the LightGBM choice | Variety of models | If time allows |
 | Regression or three-class variant | Delay minutes (MAE), or 0–5 / 6–15 / 16+ min | Variety of models | If time allows |
@@ -90,34 +92,39 @@ The app loads a saved model and a small table of test-period feature rows, never
 
 ## 5. Timeline
 
-Proposed timeline (to be agreed by the group): all code finished and frozen by 1 December, the whole project (report and slides) by **15 December**; the rest is buffer until the submission on 18 January.
+Proposed timeline (to be agreed by the group). It is written as **one sequential track**: a single member can follow it from top to bottom without waiting for anyone. Other members can take steps over or work through the same steps in parallel; where two members produce the same result, the results are compared. The minimum version (baselines B0–B3, LightGBM A, A′ and B, results table) is frozen on **1 December**, the extensions on **8 December**, the whole project (report and slides) is finished by **15 December**; the rest is buffer until the submission on 18 January.
 
 | Phase / milestone | Dates |
 | --- | --- |
-| Setup and data pipeline, coverage check | 4 – 10 Nov 2026 |
-| EDA, baselines, proposal draft | 11 – 17 Nov |
+| Setup and data pipeline, coverage check, audit | 4 – 10 Nov 2026 |
+| Cleaning, evaluation code and baselines B0–B2, core EDA, proposal draft | 11 – 17 Nov |
 | ◆ Group registration (hard deadline) | 15 Nov |
-| LightGBM A, A′ and B, evaluation | 18 – 24 Nov |
+| Weather and holidays, features, baseline B3, Data section draft | 18 – 24 Nov |
 | ◆ Proposal submitted (official deadline 30 Nov) | ~20 Nov |
-| SHAP, error analysis, dashboard | 25 Nov – 1 Dec |
-| ◆ **Results frozen** | 1 Dec |
+| LightGBM A, A′ and B, tuning, refit, final test run, results table | 25 Nov – 1 Dec |
+| ◆ **Minimum version frozen** | 1 Dec |
+| SHAP, error analysis, sensitivity checks, dashboard; Methodology and Results drafts | 2 – 8 Dec |
 | ◆ Proposal feedback due | 7 Dec |
-| Report writing | 2 – 10 Dec |
-| Slides, final PDF | 11 – 15 Dec |
+| ◆ **Extensions frozen** | 8 Dec |
+| Remaining report sections, repository clean-up | 9 – 13 Dec |
+| Slides, final PDF | 14 – 15 Dec |
 | ◆ **Everything finished** | 15 Dec |
 | Buffer | 16 Dec 2026 – 17 Jan 2027 |
 | ◆ Report and documentation submitted (hard deadline) | 18 Jan 2027, 23:59 |
 | ◆ Presentation, 10 min | 25 Jan 2027, 15:00 |
 
-The proposal goes in around 20 November, so any feedback (due by 7 December) arrives while modelling is still open. The proposal does not depend on results: draft it early in week 2.
+The proposal goes in around 20 November, so any feedback (due by 7 December) arrives while the extensions are still open. The proposal does not depend on results: draft it in week 2.
+
+**If the track slips:** the order of what is dropped is fixed in advance. First the weather ablation, then dashboard level 3, the train-number history key, neighbouring-state school holidays, dashboard deployment (level 2), per-prediction SHAP. Never dropped: baselines B0–B3, the three LightGBM models, the single test run, error analysis, the two mandatory report sections. The buffer after 15 December absorbs a slip of the report, not of the method.
 
 ## 6. To-do archive (all weeks)
 
-This is the full list of weeks. Each week ends with a working result.
+This is the full list of weeks. Items are in working order; each week ends with a working result.
 
 **Week 1 — setup and data (until 10 Nov 2026)**
 
-- [x] Third member found (9 Nov 2026); register the group by 15 Nov
+- [x] Third member found (9 Nov 2026)
+- [ ] **Register the group in the course room by 15 Nov 2026, 23:59** (hard deadline; not done on 10 Nov)
 - [x] Assignment brief added and checked: submission 18 Jan 2027, presentation 25 Jan 2027 corrected
 - [ ] Download the chair's report template into `../Informations/`
 - [x] Repository scaffold: folders, `README.md`, `requirements.txt`, `.gitignore`, `pytest.ini`, `src/config.py`, `run_pipeline.py`
@@ -130,53 +137,69 @@ This is the full list of weeks. Each week ends with a working result.
 - [x] `checks/data_quality_check.py` sections 1–4: 0 duplicate ids; change time never empty; 2 low-count days; full coverage from 3 Nov 2025; 11 "too punctual" days, all holidays/Sundays → no days excluded
 - [x] `docs/decision_log.md` D1–D12 (7 Nov)
 - [x] Plan review (7 Nov): D13 evaluation protocol, D14 baseline and history definitions, D15 dashboard replay, D16 disruption flags forbidden; working rules and this plan kept in separate files
-- [ ] Share `docs/project_plan.md` and `docs/decision_log.md` with both members and get agreement (incl. D13–D16)
+- [x] Project review (10 Nov): 37 findings, fixes on branch `audit-2026-11-10`
+- [x] Audit recommendations recorded as proposals D17–D22 (10 Nov)
+- [ ] Confirm D1–D22 in the group; merge the audit branch
+- [ ] Share `docs/project_plan.md` and `docs/decision_log.md` with both members and get agreement (D1–D22)
 - [ ] Write the cleaning step and save `wuerzburg_clean.parquet`
 
-**Week 2 — EDA, baselines, proposal (until 17 Nov 2026)**
+**Week 2 — cleaning, baselines, proposal draft (until 17 Nov 2026)**
 
 - [ ] Register the group by 15 Nov 2026 (hard deadline)
-- [ ] EDA notebook: delay distribution; by service, line, hour, weekday, month; cancellations; exactly-on-time trend; propagation example; coverage figure; B horizon
-- [ ] Weather and holiday join (`03_enrich.py`)
-- [ ] `src/evaluate.py` + baselines B0, B1 (service × hour), B2 (logistic regression) on validation
-- [ ] Draft the two-page proposal
-- [ ] Write the Data section draft while the EDA is fresh
+- [ ] Merge the audit branch, push to GitHub, download the chair's template
+- [ ] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
+- [ ] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
+- [ ] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table
+- [ ] EDA notebook, core figures: delay by service, hour, weekday, month; cancellations; coverage; rows without timetable record
+- [ ] Draft the two-page proposal (numbers from `cleaning_counts.csv`); first 6–10 related-work references
+- **Result of the week:** clean table, validation scores of three baselines, proposal draft
 
-**Week 3 — main model (until 24 Nov 2026)**
+**Week 3 — enrichment and features (until 24 Nov 2026)**
 
-- [ ] Submit the proposal around 20 Nov 2026 (official deadline 30 Nov)
-- [ ] Scenario A and B feature tables (`04_features`); time-travel, earlier-stop and same-rows tests
-- [ ] LightGBM for A, A′ and B; time-boxed tuning on validation; refit on train + validation
-- [ ] Sanity checks: single-feature AUC, shuffled target
-- [ ] Results table: baselines vs. LightGBM, A vs. A′ vs. B (PR-AUC, ROC-AUC, F1, Brier)
+- [ ] Submit the proposal around 20 Nov 2026 (official deadline 30 Nov); ask about the GenAI documentation in the same message
+- [ ] `03_enrich`: weather (downloaded once, stored in `data/raw/weather/`), public holidays, Bavarian school holidays
+- [ ] `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
+- [ ] Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
+- [ ] Baseline B3 (persistence rule) on validation (D17)
+- [ ] Rest of the EDA (propagation example, exactly-on-time trend, B horizon); write the Data section draft
+- [ ] Deploy an empty test app on Streamlit Community Cloud (checks Python and LightGBM versions early)
+- **Result of the week:** feature tables with passing leakage tests, B3 score, Data section draft
+
+**Week 4 — main models and test run (until 1 Dec 2026)**
+
+- [ ] LightGBM for A, A′ and B on training data; tuning on validation (at most 20 settings, D21)
+- [ ] Sanity checks on validation: single-feature AUC, shuffled target, SHAP top features make sense
+- [ ] Weather ablation on validation (D21; dropped first if time is short)
+- [ ] Error-analysis and slice code, written and tried on validation
+- [ ] Refit on training + validation; **final run on the test set, once** (`--final`); results table with n and base rate per row
 - [ ] Write the Methodology section draft
+- [ ] **Freeze the minimum version**: no change to features, models or settings after this point
+- **Result of the week:** `reports/results.md` with B0–B3, M-A, M-A′, M-B
 
-**Week 4 — extensions and dashboard (until 1 Dec 2026)**
+**Week 5 — extensions (until 8 Dec 2026)**
 
-- [ ] SHAP global and per prediction
-- [ ] Error analysis and failure cases
-- [ ] Streamlit app level 1, then deploy (level 2)
-- [ ] Final run on the test set, once
-- [ ] **Freeze results and figures**; no new features after this point
+- [ ] Error analysis on the test results: slices, confusion matrix, 20 largest errors grouped into failure types
+- [ ] Sensitivity checks: cancellations as delayed (D9); rows without timetable record included (D18)
+- [ ] SHAP global (M-A, M-B)
+- [ ] Streamlit app level 1 (developed on validation rows, switched to the test table at the end), then deploy (level 2)
+- [ ] Write the Results section draft
+- [ ] **Freeze results and figures**
+- **Result of the week:** all figures and tables of the report exist
 
-**Weeks 5–6 — report (until 10 Dec 2026)**
+**Week 6 — report and slides (until 15 Dec 2026)**
 
-- [ ] Results, Discussion, Introduction, Related work, Conclusion in the chair's template
+- [ ] Introduction, Related work, Discussion, Conclusion in the chair's template; revise Data, Methodology, Results
 - [ ] Use of generative AI and Contributions sections from the members' AI-use logs
-- [ ] Clean the repository: README with setup and run instructions, docstrings
-- [ ] Cross-review: each member reads one other member's sections
-
-**Week 7 — slides and finish (until 15 Dec 2026)**
-
+- [ ] Clean the repository: README with setup and run instructions, docstrings, LICENSE
+- [ ] Cross-review: each member reads sections written by another member
 - [ ] 10-minute presentation with a live dashboard demo and a recorded backup
-- [ ] Final PDF export and check against the template
-- [ ] Submit as soon as the submission is open
+- [ ] Final PDF export and check against the template; submit as soon as the submission is open
 
 **16 Dec – 17 Jan:** buffer only. Submit by 18 Jan 2027, 23:59; rehearse once before 25 Jan 2027.
 
 ## 7. Roles and report structure
 
-Proposed split (to be agreed by the group): each member owns one workstream end to end and reviews one other member's work. Names are assigned in the report's Contributions section, not here.
+Proposed split (to be agreed by the group): each member owns one workstream end to end and reviews one other member's work. The timeline in section 5 does not depend on this split: it is one track that a single member can complete, so a member can also work through steps owned by someone else and the two results are compared. Names are assigned in the report's Contributions section, not here.
 
 | Member | Owns | Report sections |
 | --- | --- | --- |
@@ -214,6 +237,7 @@ Code lives in one documented GitHub repository linked from the PDF. The decision
 | Scenario A scores modestly | High | Low | Expected; reported as a finding; scenario B carries performance |
 | Dashboard grows beyond scope | Medium | Medium | Fixed three levels; replay only; level 3 only after the report draft exists |
 | Report left to the end | Medium | High | Write each section in the week its work is done |
+| Most of the work falls on one member | Medium | High | Timeline is a single sequential track with a fixed order of what is dropped (section 5); minimum version first; buffer of five weeks after 15 Dec |
 | Fallback needed | Low | High | German electricity demand (OPSD/SMARD), same pipeline pattern |
 
 ## 9. GenAI documentation

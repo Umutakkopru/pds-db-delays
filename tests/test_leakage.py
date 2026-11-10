@@ -2,8 +2,11 @@
 Automated leakage checks. Run with `pytest` before every training run.
 
 Current tests cover the feature whitelist and the split definition.
-To add with step 04 (week 3): time-travel test for history features and the
-earlier-stop timing test for scenario B (see decision log, D24).
+Limits: the whitelist tests compare column names only and pass trivially
+while the feature lists are empty. To add with steps 04 and 05: the columns of
+the feature tables given to the models equal FEATURES[scenario]; time-travel
+test for history features; earlier-stop timing test for scenario B (see
+decision log, D24).
 """
 import pandas as pd
 import pytest
@@ -19,13 +22,20 @@ def test_no_forbidden_column_in_features(scenario):
     assert not leaked, f"Forbidden columns in scenario {scenario}: {sorted(leaked)}"
 
 
-@pytest.mark.parametrize("scenario", ["A", "B"])
-def test_no_propagation_features_in_scenario_a(scenario):
+def test_no_propagation_features_in_scenario_a():
     # Scenario A must not see anything from earlier stops of the same trip.
-    if scenario != "A":
-        pytest.skip("only relevant for scenario A")
-    prev_like = [c for c in features_config.FEATURES["A"] if c.startswith("prev")]
+    # Naming rule (src/features_config.py): earlier-stop features start with "prev_".
+    prefix = features_config.PROPAGATION_PREFIX
+    prev_like = [c for c in features_config.FEATURES["A"] if c.startswith(prefix)]
     assert not prev_like, f"Earlier-stop features in scenario A: {prev_like}"
+
+
+def test_scenario_b_adds_only_propagation_features():
+    # B = everything in A plus earlier-stop features (D3).
+    a, b = features_config.FEATURES["A"], features_config.FEATURES["B"]
+    extra = [c for c in b if c not in a]
+    not_prev = [c for c in extra if not c.startswith(features_config.PROPAGATION_PREFIX)]
+    assert not not_prev, f"Scenario B features that are neither in A nor earlier-stop features: {not_prev}"
 
 
 @pytest.mark.parametrize("scenario", ["A", "B"])
@@ -41,8 +51,12 @@ def test_same_test_period_for_both_scenarios():
 
 
 def test_scenario_b_trains_only_with_full_coverage():
-    start = pd.Timestamp(config.SPLITS["B"]["train"][0])
-    assert start >= pd.Timestamp(config.FULL_COVERAGE_START)
+    # Literal date on purpose (decision log D6): comparing the split start with
+    # config.FULL_COVERAGE_START would compare the constant with itself.
+    # tests/test_data.py checks the same date against the data.
+    first_full_day = pd.Timestamp("2025-11-03")
+    assert pd.Timestamp(config.FULL_COVERAGE_START) >= first_full_day
+    assert pd.Timestamp(config.SPLITS["B"]["train"][0]) >= first_full_day
 
 
 def test_splits_inside_data_period():
