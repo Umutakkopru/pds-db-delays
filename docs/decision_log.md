@@ -273,6 +273,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 **Decision.**
 - Each row stores its `source_month`; cleaning drops duplicate ids (none expected).
 - Earlier stops of a trip = same `train_line_ride_id`, lower stop number, planned within the 12 hours before the Würzburg arrival (handles trips across midnight). Each earlier stop is linked to its Würzburg row via `wuerzburg_id`.
+- *Added 10 Nov 2026 (audit D-04):* "0 duplicate ids" holds for the Würzburg rows. Among the 1,285,032 earlier-stop rows 60 ids occur twice, because 23 pairs of Würzburg rows share a ride id within 12 hours (the same train listed twice with different stop numbers); 7 Würzburg rows have two earlier stops with the same stop number and 76 stop pairs are planned in an order that contradicts their stop number. None of the duplicated Würzburg rows is a modelling row. The feature step therefore keys earlier stops by `wuerzburg_id` plus `id` and takes "the previous stop" by the latest planned time before the Würzburg arrival.
 - Known limitation: earlier stops are searched only within the same monthly file; a train arriving shortly after midnight on the 1st loses earlier stops on the last day of the previous month (a few trains per month, scenario B only).
 
 **Report.** Data or Methodology (pipeline), one sentence each.
