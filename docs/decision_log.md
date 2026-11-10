@@ -6,9 +6,9 @@ Purpose: a chronological record of every data and method decision, with the ques
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Who decided: D1–D16 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+Who decided: D1–D22 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
 
-Status: 7 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; cleaning step next).
+Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; independent audit on 10 Nov, its recommendations recorded as D17–D22; cleaning step next).
 
 ---
 
@@ -32,6 +32,12 @@ Status: 7 Nov 2026, end of week 1 (data acquisition and data checks complete; ev
 | D14 | Baseline and history features | B1 = service × hour; history window [D − 29, D − 1); `train_number` not a feature | D7 (unstable `train_type`); prediction moment of scenario A | 4 |
 | D15 | Dashboard scope | Replay of real test-period departures, no free future dates | No live weather/history without API calls | 5 |
 | D16 | Disruption flags | `is_additional_stop`, `is_replacement_train`, `replaced_train_*`, `has_plan_record` are filters only, never features | Additional stops 43.8% delayed vs. 24.6% | 4 |
+| D17 | Baseline for scenario B | B3: "delayed at the previous stop → delayed at Würzburg", scored on the same rows as M-A′ and M-B | Rule alone: 85.3% accuracy, F1 ≈ 0.81 in the B training window | 4, 5 |
+| D18 | Rows without timetable record | Stay excluded; counts per split reported; sensitivity check for scenario A | Share grows from 1.4% to 6.3%; delayed 54% vs 23% in the test period | 3, 5, 6 |
+| D19 | Cleaning step design | Rows are flagged with `exclude_reason`, not deleted; delays below −30 min invalid; `line_id` by format, line prefix wins | 4 impossible delays; 2,442 digit-only lines after Dec 2025 | 3 |
+| D20 | Through trains | `is_through` = planned arrival present; `has_prev_stop` separate; scenario B rows need both | 72 test departures arrive without an earlier stop in the data | 4 |
+| D21 | Evaluation details | Tree count and threshold kept in the refit; tuning at most 20 settings; weather ablation on validation | Refit data is 30–34% larger; weather is observed, not forecast | 4, 6 |
+| D22 | Order and scope of the remaining steps | Baselines before enrichment; simple history features first; Bavarian school holidays first; minimum version frozen 1 Dec, extensions 8 Dec | One working track must reach a full results table early | – |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -345,6 +351,94 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 **Decision.** The disruption flags plus `source_month` and `row_role` are added to `FORBIDDEN_COLUMNS` in `src/features_config.py`; they may only be used to filter rows. Excluding cancelled departures is also a filter based on information known only later; it is standard because the target is undefined for a train that does not run (D9) and is named in the Discussion.
 
 **Report.** Methodology (leakage rules), one sentence.
+
+## D17 Baseline for scenario B: persistence rule B3 (10 Nov 2026; proposal from the audit, E-01)
+
+**Question.** B0–B2 are scenario A baselines. Against what is the en-route model M-B judged?
+
+**Method.** DuckDB query on `data/interim/` (appendix of `docs/audit_2026-11-10.md`, Q5): B training window (3 Nov 2025 – Apr 2026), through trains with a non-cancelled earlier stop, approximate cleaning rules.
+
+**Result.** 23,931 departures, 36.4% delayed. The delay at the previous stop and the departure delay at Würzburg correlate with 0.919. The rule "6+ min late at the previous stop → 6+ min late at Würzburg" has accuracy 85.3%, precision 77.2%, recall 84.5% (F1 ≈ 0.81). In 5.6% of the rows the train left its previous stop after the planned Würzburg departure.
+
+**Decision.** Add baseline **B3** for scenario B: as a class rule (previous-stop delay ≥ 6 min) for F1, precision and recall, and with the previous-stop delay in minutes as the score for PR-AUC and ROC-AUC. B3 is evaluated on the same through-train test rows as M-A′ and M-B; the gain of the model is M-B − B3 with the paired day-block bootstrap (D13). If the gain is small, that is reported as a finding. Implemented in `src/evaluate.py` and `05_train.py`.
+
+**Alternatives considered.** Logistic regression on the previous-stop delay alone (same information, one more model; optional); no B baseline (M-B could not be judged).
+
+**Report.** Methodology (baselines), Results.
+
+## D18 Rows without a timetable record: reported and tested (10 Nov 2026; proposal from the audit, E-02)
+
+**Question.** D8 excludes rows with `has_plan_record` = false. Does this bias the data?
+
+**Method.** DuckDB query on `data/interim/` (audit appendix, Q3): planned, non-cancelled train departures.
+
+**Result.**
+
+| Period | Departures | Without record | Share | Delayed, with record | Delayed, without record | Delayed, all |
+| --- | --- | --- | --- | --- | --- | --- |
+| Jul 2024 – Nov 2025 | 146,351 | 2,063 | 1.41% | 25.83% | 57.6% | 26.28% |
+| Dec 2025 | 8,357 | 224 | 2.68% | 22.67% | 35.3% | 23.01% |
+| Jan – Jun 2026 | 48,425 | 2,426 | 5.01% | 22.00% | 45.8% | 23.19% |
+| Jul – Oct 2026 (test) | 34,118 | 2,150 | 6.30% | 23.01% | 54.0% | 24.97% |
+
+These rows exist only because DB's change feed reported something for them; in 2026, 4,302 of 4,576 are long-distance trains.
+
+**Decision.** The rows stay excluded from training and from the main evaluation (the flag is known only afterwards, D16). The cleaning step keeps them with `exclude_reason = 'no_plan_record'` (D19) and `cleaning_counts.csv` shows them per split. A second sensitivity check, next to the cancellation one (D9), scores the final scenario A models once on the test departures including these rows. The Data section shows the table; the Discussion names the selection.
+
+**Alternatives considered.** Including them in training (their existence depends on the outcome); ignoring the issue (a reviewer can call it selection on the outcome).
+
+**Report.** Data (exclusions), Results (sensitivity), Discussion (limitations).
+
+## D19 Cleaning step design (10 Nov 2026; proposal from the audit, E-06 and E-07)
+
+**Question.** How does `02_clean` apply the exclusion rules so that counts and sensitivity checks stay simple?
+
+**Evidence.** Four departures have impossible delays (−1,438, −59, −59 and −54 min: a wrong date or hour in the change time); the largest positive delay is 396 min. The line format does not follow the date exactly (D7, correction note): 2,442 departures from December 2025 on have digit-only lines, 825 earlier ones have a prefix; 1,901 departures have type RB with a line starting with RE.
+
+**Decision.**
+- `02_clean` writes **every** planned Würzburg departure and adds a column `exclude_reason` (first matching rule: `bus`, `no_plan_record`, `canceled`, `dst_night`, `invalid_delay`, `duplicate_id`; NULL = modelling row). Nothing is deleted. `cleaning_counts.csv` is the count per reason and split; both sensitivity checks (D9, D18) select their rows by reason.
+- A departure delay below −30 minutes is invalid (`invalid_delay`).
+- `line_id` is built by format, not by date: a line with a letter prefix is used as it is; a digit-only line gets the train type as prefix. If train type and line prefix disagree, the line prefix wins; the check via `train_number` (D7) stays.
+
+**Alternatives considered.** Deleting rows as planned before (each sensitivity check would need its own cleaning run).
+
+**Report.** Data (cleaning rules with counts).
+
+## D20 Definition of through trains (10 Nov 2026; proposal from the audit, E-04)
+
+**Question.** D3 calls a train "through" when it arrives and departs again; the pipeline plan said "has an earlier stop". Which one defines the scenario B rows?
+
+**Evidence.** Modelling rows before 3 Nov 2025: 73,275 with a planned arrival, 67,105 with an earlier stop in the data. Test period: 15,993 and 15,921 (72 differ).
+
+**Decision.** Two columns: `is_through` = planned arrival at Würzburg present; `has_prev_stop` = at least one non-cancelled earlier stop in the data. Scenario B (M-A′, M-B, B3) uses rows where both are true, because its prediction moment is the departure from the previous stop. Through trains without an earlier stop are counted per split and reported.
+
+**Report.** Methodology (scenario B rows).
+
+## D21 Evaluation details (10 Nov 2026; proposal from the audit, E-08 and E-09)
+
+**Decision.**
+- **Refit:** the number of trees found by early stopping and the max-F1 threshold are kept unchanged when the final models are refitted on training + validation (A: 152,421 → 198,420 rows; B through trains: 23,946 → 31,977). The report says so; PR-AUC, ROC-AUC and Brier do not depend on the threshold.
+- **Tuning budget:** at most 20 hyperparameter settings per model, fixed before the first run.
+- **Weather ablation:** M-A is trained once without the weather features and compared on validation. It bounds the limitation that observed weather stands in for a forecast. It is the first item dropped if time is short.
+- **Order of work:** features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data; the test run is one command at the end (see `CLAUDE.md`, evaluation protocol).
+
+**Alternatives considered.** Scaling the tree count with the data size (one more assumption for little gain).
+
+**Report.** Methodology (evaluation design), Discussion (limitations).
+
+## D22 Order and scope of the remaining steps (10 Nov 2026; proposal from the audit)
+
+**Question.** How does one working track reach a complete results table as early as possible?
+
+**Decision.**
+- **Baselines before enrichment:** `src/evaluate.py` and B0–B2 come directly after cleaning (they need only timetable and calendar columns), so the first end-to-end result exists in week 2. Weather and holidays follow.
+- **History features start simple:** delay rate over [D − 29, D − 1 00:00) per `service` × hour and per `line_id` (route group for long-distance trains). The train-number level with its fallback chain (D14) is added only after the first full results table.
+- **School holidays:** Bavaria first; neighbouring states only if time allows.
+- **Weather** is downloaded once and stored under `data/raw/` (the API can revise values).
+- **Earlier stops stay within the monthly file** (D12 unchanged): reading the previous month as well would save the earlier stops of about 32 trains and is not worth a new data run.
+- **Freeze in two steps:** minimum version (B0–B3, M-A, M-A′, M-B, results table, test run) by 1 Dec 2026; extensions (SHAP, error analysis, sensitivity checks, dashboard) by 8 Dec 2026; everything by 15 Dec 2026.
+
+**Report.** –
 
 ---
 

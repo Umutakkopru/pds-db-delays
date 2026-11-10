@@ -1,10 +1,10 @@
 # Predicting Train Delays at Würzburg Hbf — rules, decisions, status
 
-Last updated: 9 Nov 2026 · PDS Group 18 · Practical Data Science, Information Systems M.Sc., Uni Würzburg, WiSe 2026/27
+Last updated: 10 Nov 2026 · PDS Group 18 · Practical Data Science, Information Systems M.Sc., Uni Würzburg, WiSe 2026/27
 
 This is the working context for every session with an AI assistant (Claude Code reads it automatically). It holds the working rules, decisions, pipeline and current status. Details live in two more files that are read **only when the task needs them** (see Read-when).
 
-**Status of decisions (9 Nov 2026):** all decisions and the plan so far (D1–D16, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D22, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## Instructions for the AI assistant
 
@@ -33,7 +33,7 @@ Before starting a task of the kind on the left, read the file on the right with 
 | Task | Own end-to-end ML project, group of 3 (Group 18; all three members confirmed on 9 Nov 2026; registration in the course room by 15 Nov) |
 | Goal | For every train departing Würzburg Hbf, predict the probability that it departs **6 or more minutes late**, before the trip (A) and en route (B), and compare the two |
 | Data | Deutsche Bahn Data archive (Hugging Face `piebro/deutsche-bahn-data`, CC BY 4.0), Jul 2024 – Oct 2026; 365,502 Würzburg rows; ≈230,000 non-cancelled train departures for modelling, ≈23–25% delayed (exact counts from `02_clean.py`) |
-| Models | B0 majority, B1 rule-based, B2 logistic regression, LightGBM (M-A, M-A′, M-B) |
+| Models | B0 majority, B1 rule-based, B2 logistic regression, B3 persistence rule (scenario B), LightGBM (M-A, M-A′, M-B) |
 | Committed extras | DuckDB/SQL pipeline, Streamlit dashboard (deployed), SHAP |
 | Pass condition | A baseline plus at least one more approach, implemented with care |
 
@@ -45,7 +45,7 @@ Before starting a task of the kind on the left, read the file on the right with 
 | Final PDF report and documentation | 18 Jan 2027, 23:59 |
 | Presentation (10 min) | 25 Jan 2027, 15:00 |
 
-Proposed plan (to be agreed by the group): code and results frozen by **1 Dec 2026**, everything finished by **15 Dec 2026**; the rest is buffer until the submission on 18 Jan.
+Proposed plan (to be agreed by the group): minimum version (baselines, LightGBM, results table) frozen by **1 Dec 2026**, extensions by **8 Dec 2026**, everything finished by **15 Dec 2026**; the rest is buffer until the submission on 18 Jan. The plan is written as one sequential track that a single member can follow from start to finish; steps can be shared or done in parallel by other members and the results compared.
 
 ## Decisions so far (proposals, to be confirmed by the group; details and evidence: `docs/decision_log.md`)
 
@@ -67,6 +67,12 @@ Proposed plan (to be agreed by the group): code and results frozen by **1 Dec 20
 | D14 | B1 = service × hour; history window [D − 29, D − 1 00:00); `train_number` is a key, not a feature |
 | D15 | Dashboard replays real test-period departures; no free future dates |
 | D16 | Disruption flags (`is_additional_stop`, `is_replacement_train`, `replaced_train_*`, `has_plan_record`) are filters only |
+| D17 | Baseline B3 for scenario B: delayed at the previous stop → delayed at Würzburg; M-B is judged against it |
+| D18 | Rows without timetable record stay excluded, are counted per split, and get a sensitivity check (scenario A) |
+| D19 | `02_clean` flags rows with `exclude_reason` instead of deleting them; delays below −30 min invalid; `line_id` by format, line prefix wins |
+| D20 | `is_through` = planned arrival present; `has_prev_stop` separate; scenario B rows need both |
+| D21 | Refit keeps tree count and threshold; at most 20 tuning settings; weather ablation on validation |
+| D22 | Baselines before enrichment; simple history features first; Bavarian school holidays first; freeze 1 Dec (minimum) and 8 Dec (extensions) |
 
 ## Problem definition
 
@@ -95,13 +101,13 @@ Why: start = first month in the archive (two winters); end = last complete month
 ## Pipeline (one script per step; `python run_pipeline.py` runs all, leakage tests before step 05)
 
 1. **Download and filter** (`src/01_download.py`, `src/sql/01_filter_month.sql`) — done. Per month: Würzburg rows plus earlier stops of the same trip (same `train_line_ride_id`, lower stop number, planned within 12 h before the Würzburg arrival), linked by `wuerzburg_id`, with `row_role` and `source_month`. Output `data/interim/wuerzburg_YYYY-MM.parquet`; checks in `reports/checks/`.
-2. **Clean** (`src/02_clean.py` + `src/sql/02_clean.sql`) — next. Model rows = `row_role = 'wuerzburg'` only. Drop duplicate ids across months; drop cancelled departures, rows without timetable record or planned time, buses, DST-night rows (`config.dst_change_days()`, `DST_EXCLUDE_HOURS`); compute `dep_delay` and `delayed`; `service_date` = date of the Würzburg planned departure; build `line_id`, `service`, `is_through` (has an earlier stop). Write the row count removed by each rule to `reports/checks/cleaning_counts.csv`. Save earlier stops separately (`wuerzburg_prev_stops.parquet`). **Open points for this step, to agree in the group (audit of 10 Nov 2026, E-04, E-06, E-07):** (a) four departures have impossible delays between −54 and −1,438 min (wrong date or hour in the change time); proposed rule: delays below −30 min are invalid, excluded and counted; (b) `is_through` here means "has an earlier stop", D3 means "arrives and departs again" (72 test departures differ); proposed: `is_through` = planned arrival present, plus a separate `has_prev_stop`.
-3. **Enrich** (`src/03_enrich.py`): hourly weather (Open-Meteo, `timezone=Europe/Berlin`), public holidays (Bavaria, `holidays` package), school holidays (Bavaria and neighbouring states, official list as CSV).
-4. **Features** (`src/04_features.py` + `src/sql/04_features.sql`): scenario A and B tables; history from a daily aggregate table (key × day) joined over [D − 29, D − 1).
-5. **Train and evaluate** (`src/05_train.py`, shared metrics in `src/evaluate.py`): fixed seeds; one results table `reports/results.md`; figures in `reports/figures/`.
+2. **Clean** (`src/02_clean.py` + `src/sql/02_clean.sql`) — next. Input = `row_role = 'wuerzburg'` rows with a planned departure (trains that end at Würzburg are not part of the target). **No departure is deleted** (D19): each one gets `exclude_reason` (first matching rule: `bus`, `no_plan_record`, `canceled`, `dst_night` via `config.dst_change_days()` and `DST_EXCLUDE_HOURS`, `invalid_delay` = delay below −30 min, `duplicate_id`); modelling rows have `exclude_reason` NULL. Compute `dep_delay` and `delayed`; `service_date` = date of the Würzburg planned departure; build `line_id`, `service`, `is_through` (planned arrival present) and `has_prev_stop` (a non-cancelled earlier stop exists) (D20). Write the count per reason and split to `reports/checks/cleaning_counts.csv`. Save earlier stops separately (`wuerzburg_prev_stops.parquet`), keyed by `wuerzburg_id` and `id`. Output `data/processed/wuerzburg_clean.parquet`.
+3. **Enrich** (`src/03_enrich.py`), after the baselines (D22): hourly weather (Open-Meteo, `timezone=Europe/Berlin`; downloaded once and stored in `data/raw/weather/`), public holidays (Bavaria, `holidays` package), school holidays (Bavaria first, official list as CSV; neighbouring states only if time allows).
+4. **Features** (`src/04_features.py` + `src/sql/04_features.sql`): scenario A and B tables; history from a daily aggregate table (key × day) joined over [D − 29, D − 1). First version: keys `service` × hour and `line_id` / route group; the train-number key with its fallback comes after the first full results table (D22).
+5. **Train and evaluate** (`src/05_train.py`, shared metrics and the day-block bootstrap in `src/evaluate.py`): fixed seeds; `src/evaluate.py` and the baselines B0–B2 are written directly after step 2 and scored on validation; one results table `reports/results.md`; figures in `reports/figures/`. The test run is a single command (`--final`) that refuses to run twice.
 
 **Category columns (D7):**
-- `line_id`: line prefix when present ("RB53", "RE10", "RE8"); otherwise `train_type` + digits for RE/RB rows before Dec 2025 ("RB" + "53"; the format does not follow the date exactly: 2,442 departures from Dec 2025 on still have digit-only lines and 825 earlier ones already have a prefix, so apply the rule by format, not by date, see D7); ARV rows keep their line (RE8, RB8, RE80); NULL for long-distance trains. **To verify in `02_clean`:** via `train_number`, the RE/RB label before Dec 2025 matches the line prefix after (some 2026 rows have line RE10 with type RB; line 8 has both RE8 and RB8).
+- `line_id` (by format, not by date, D19): a line with a letter prefix is used as it is ("RB53", "RE10", "RE8"); a digit-only line gets the train type as prefix ("RB" + "53"); ARV rows keep their line (RE8, RB8, RE80); NULL for long-distance trains. If train type and line prefix disagree (1,901 departures have type RB with an RE line), the line prefix wins. **To verify in `02_clean`:** via `train_number`, the RE/RB label before Dec 2025 matches the line prefix after (line 8 has both RE8 and RB8).
 - `service`: `long_distance` (ICE, IC, EC), `night` (NJ, EN), `regional` (RE, RB, ARV, regional lines labelled otherwise), `other`.
 - `train_type`: reporting only, never a feature. ICE rows have no line: use a route group (origin/destination direction).
 
@@ -112,7 +118,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 | Timetable | Service, line_id / route group, destination, planned hour, weekday, stop position in route | A, B |
 | Calendar | Public holiday, school holiday, bridge day, Friday and Sunday evening peaks | A, B |
 | Weather | Temperature, precipitation, wind speed, snow (observed weather stands in for a forecast) | A, B |
-| History | Delay rate over [D − 29, D − 1 00:00); fallback train number → line_id / route group → service when a cell is sparse | A, B |
+| History | Delay rate over [D − 29, D − 1 00:00) per service × hour and per line_id / route group; later: train number with fallback → line_id / route group → service when a cell is sparse | A, B |
 | Propagation | Delay at the previous stop and two stops before (departure delay, else arrival delay); planned minutes from that stop to Würzburg; stops between (from `train_line_station_num`) | B only |
 
 ## Leakage rules
@@ -138,18 +144,20 @@ Why: start = first month in the archive (two winters); end = last complete month
 | B0 | Majority class ("on time") | – | Shows why accuracy misleads |
 | B1 | Delay rate of service × hour | A train | Rule-based baseline (brief) |
 | B2 | Logistic regression, timetable + calendar (one-hot `handle_unknown="ignore"`) | A train | Interpretable baseline |
+| B3 | Persistence rule: previous-stop delay ≥ 6 min (score: previous-stop delay in minutes) | – (no fitting) | Baseline for scenario B (D17) |
 | M-A | LightGBM, A features | A train | Main model, before the trip |
 | M-A′ | LightGBM, A features | B train window, through trains | Control: isolates propagation effect |
 | M-B | LightGBM, B features | B train | Main model, en route |
 
-1. Tuning (time-boxed small grid), number of trees (early stopping) and threshold are chosen with training-only models on validation. No class weighting (`is_unbalance`, `scale_pos_weight`): probabilities must stay calibrated.
-2. Final models are refitted on training + validation with those settings, then **all models are scored once on the test set at the same time**. Nothing changes after seeing test results. Until then features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data, and no further label statistics are computed on the test period.
-3. Same rows for all models: A on all test departures; M-A, M-A′ and M-B also on the identical through-train subset. Propagation effect = M-B − M-A′.
+1. Tuning (small grid, at most 20 settings per model, fixed in advance; D21), number of trees (early stopping) and threshold are chosen with training-only models on validation. No class weighting (`is_unbalance`, `scale_pos_weight`): probabilities must stay calibrated.
+2. Final models are refitted on training + validation with those settings (tree count and threshold unchanged, D21), then **all models are scored once on the test set at the same time**. Nothing changes after seeing test results. Until then features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data, and no further label statistics are computed on the test period.
+3. Same rows for all models: A on all test departures; M-A, M-A′, M-B and B3 also on the identical scenario B subset (`is_through` and `has_prev_stop`, D20). Propagation effect = M-B − M-A′; gain over the simple rule = M-B − B3 (D17).
 4. Uncertainty: 1,000 bootstrap resamples **of whole days**; a model is better only if the 95% interval of the paired metric difference lies above zero.
-5. Slices: service, line (incl. 8 and 80), hour, weekday, month, holiday, weather; scenario B also by minutes from the previous stop (< 10, 10–30, > 30). Confusion matrix; 20 largest errors grouped into failure types; cancellation sensitivity check.
+5. Slices: service, line (incl. 8 and 80), hour, weekday, month, holiday, weather; scenario B also by minutes from the previous stop (< 10, 10–30, > 30). Confusion matrix; 20 largest errors grouped into failure types; two sensitivity checks: cancellations counted as delayed (D9) and departures without timetable record included (scenario A, D18).
 6. SHAP global (M-A, M-B) and per prediction (dashboard).
+7. Weather ablation: M-A without weather features, compared on validation (D21; dropped first if time is short).
 
-Results table (`reports/results.md`, written by `05_train.py`): Model | Scenario | Rows (n) | Base rate | PR-AUC [95% CI] | ROC-AUC [95% CI] | F1 | Precision | Recall | Brier — rows B0, B1, B2, M-A, M-A′, M-B. Row sets with different base rates are not compared with each other (through trains are delayed more often than all departures: 36% vs 24% in the B training window).
+Results table (`reports/results.md`, written by `05_train.py`): Model | Scenario | Rows (n) | Base rate | PR-AUC [95% CI] | ROC-AUC [95% CI] | F1 | Precision | Recall | Brier — rows B0, B1, B2, M-A on all departures; M-A, M-A′, B3, M-B on the scenario B subset. Row sets with different base rates are not compared with each other (through trains are delayed more often than all departures: 36% vs 24% in the B training window).
 
 ## Environment and conventions
 
@@ -199,7 +207,7 @@ pds-db-delays/
 - [ ] Encoders, scalers, categories fitted on training data only?
 - [ ] Scenario A ROC-AUC above ~0.95 → stop and check leakage.
 - [ ] Does the pipeline run from raw files to results with one command; seeds fixed; raw data out of Git; docstrings present?
-- [ ] Minimum version (baselines + LightGBM + evaluation) works before any extension; after 1 Dec only writing.
+- [ ] Minimum version (baselines B0–B3 + LightGBM + evaluation) works before any extension; minimum version frozen 1 Dec, extensions 8 Dec, after that only writing.
 - [ ] Is the report section for this week's work drafted this week?
 - [ ] Every number in the report traceable to a script or output; sources and licenses cited (DB Data CC BY 4.0, weather, holidays)?
 - [ ] Has each member logged their own AI use?
@@ -212,20 +220,17 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (7 Nov 2026).** Week 1 nearly done: all 28 months downloaded and filtered; coverage (`reports/checks/coverage_by_month.csv`), category and data-quality checks done; rules for cleaning, cancellations and time zone fixed; no days excluded; evaluation protocol refined (D13–D16); this file split (details in `docs/project_plan.md`). **Audit (10 Nov 2026):** independent review of the whole project in `docs/audit_2026-11-10.md` (37 findings, none critical; fixes on branch `audit-2026-11-10`): dataset revision fixed in `config.py`, tests extended (filter SQL, data, configuration), check scripts and several numbers corrected; five points wait for a group decision. Tests: 26 passed. **Next action:** write `src/02_clean.py` (+ `src/sql/02_clean.sql`) and save `data/processed/wuerzburg_clean.parquet`.
+**Current status (7 Nov 2026).** Week 1 nearly done: all 28 months downloaded and filtered; coverage (`reports/checks/coverage_by_month.csv`), category and data-quality checks done; rules for cleaning, cancellations and time zone fixed; no days excluded; evaluation protocol refined (D13–D16); this file split (details in `docs/project_plan.md`). **Audit (10 Nov 2026):** independent review of the whole project in `docs/audit_2026-11-10.md` (37 findings, none critical; fixes on branch `audit-2026-11-10`): dataset revision fixed in `config.py`, tests extended (filter SQL, data, configuration), check scripts and several numbers corrected; the audit's recommendations are recorded as proposals D17–D22 (baseline B3, rows without plan record, cleaning design, through-train definition, evaluation details, order of steps). Tests: 26 passed. **Next action:** write `src/02_clean.py` (+ `src/sql/02_clean.sql`) and save `data/processed/wuerzburg_clean.parquet`.
 
-**Now (week 1–2, until 17 Nov)**
+**Now (week 2, until 17 Nov)** — in this order
 
 - [ ] **Register the group by 15 Nov** (all three members found; registration in the course room still to do)
-- [ ] Share `docs/project_plan.md`, `docs/decision_log.md` and `CLAUDE.md` with both members and get agreement (incl. D13–D16)
-- [ ] Decide the five open points of the audit in the group (`docs/audit_2026-11-10.md`: E-01 baseline for scenario B, E-02 rows without plan record, E-04 through-train definition, E-08 weather ablation, E-09 refit details)
-- [ ] Review and merge branch `audit-2026-11-10` into `main`
-- [ ] Collect 6–10 related-work references on train delay prediction; ask the supervisor how detailed the GenAI documentation must be (with the proposal)
-- [ ] Push the repository to GitHub and add collaborators; download the chair's report template
-- [ ] `02_clean` + tests + `cleaning_counts.csv`
-- [ ] EDA notebook
-- [ ] `03_enrich` (weather, holidays)
-- [ ] `src/evaluate.py` + baselines B0, B1, B2 on validation
-- [ ] Draft the two-page proposal; Data section draft
+- [ ] Review and merge branch `audit-2026-11-10` into `main`; push the repository to GitHub and add collaborators
+- [ ] Share `docs/project_plan.md`, `docs/decision_log.md` and `CLAUDE.md` with both members and get agreement (D1–D22)
+- [ ] Download the chair's report template; collect names and matriculation numbers for the proposal
+- [ ] `02_clean` with `exclude_reason`, `is_through`, `has_prev_stop` + tests + `cleaning_counts.csv` per split (D19, D20)
+- [ ] `src/evaluate.py` (metrics, day-block bootstrap, tests) + baselines B0, B1, B2 on validation (D22)
+- [ ] EDA notebook: core figures only (delay by service, hour, month; cancellations; coverage; rows without plan record)
+- [ ] Draft the two-page proposal; collect 6–10 related-work references; ask the supervisor about the GenAI documentation with the proposal
 
-**Next (week 3, until 24 Nov):** submit proposal (~20 Nov); `04_features` + time-travel/earlier-stop/same-rows tests; LightGBM A, A′, B with tuning and refit; sanity checks; results table; Methodology draft. Later weeks: `docs/project_plan.md`.
+**Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` (weather, public and Bavarian school holidays); `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.
