@@ -20,7 +20,7 @@ To pass, we need a baseline plus at least one more approach, implemented with su
 | Final PDF report and all documentation | 18 Jan 2027, 23:59 |
 | Presentation (10 min per group) | 25 Jan 2027, 15:00 (room to be announced) |
 
-**Proposal must contain:** group members (name, matriculation number), working title and problem statement, dataset (source, size, license), target variable and evaluation metric, planned baseline and modelling approaches. Use the cleaned numbers from `02_clean.py` (≈230,000 non-cancelled departures, ≈23% delayed), not the raw row count.
+**Proposal must contain:** group members (name, matriculation number), working title and problem statement, dataset (source, size, license), target variable and evaluation metric, planned baseline and modelling approaches. Use the cleaned numbers from `02_clean.py` (≈230,000 non-cancelled departures, ≈25% delayed: 24.6% over all 28 months, 23.0% in the test period), not the raw row count.
 
 **Required subgoals:** problem definition and motivation; EDA; clean, reproducible data pipeline; simple interpretable baseline; at least one more advanced approach; evaluation on a held-out test set with suitable metrics and error analysis.
 
