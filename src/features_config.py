@@ -69,6 +69,10 @@ ALLOWED_RAW_INPUTS = {
 # scenario A.
 PROPAGATION_PREFIX = "prev_"
 
+# Columns of the logistic-regression baseline B2 (timetable only, all known the
+# day before). Holidays are added after step 03, the route group after step 04.
+BASELINE_FEATURES = ["service", "line_id", "planned_hour", "weekday", "is_through"]
+
 # Allowed feature columns per scenario (filled in week 3).
 FEATURES: dict[str, list[str]] = {
     "A": [],
