@@ -86,7 +86,7 @@ Share of stops departing 6+ min late by train type (Oct 2026, cancelled excluded
 
 Over all 28 months (approximate cleaning rules, 7 Nov 2026): 230,388 non-cancelled train departures with a timetable record, 24.6% departing 6+ min late; 109,085 (47%) of them start at Würzburg (no planned arrival).
 
-**Actual columns** (the GitHub README of the dataset is outdated; these are the real names):
+**Actual columns** (the dataset's GitHub README was outdated on 4 Nov 2026 and lists the same 23 columns since at least 10 Nov 2026):
 
 | Column | Meaning | Use |
 | --- | --- | --- |

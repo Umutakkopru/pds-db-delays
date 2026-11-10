@@ -174,7 +174,7 @@ pds-db-delays/
 ## Known gotchas
 
 - Relative paths resolve from the terminal's folder, not the script's: always build paths from `Path(__file__)`.
-- The dataset's GitHub README lists outdated column names; real columns: `train_number`, `line_number`, `arrival_is_canceled`, `departure_is_canceled`; no `train_name`, no `is_canceled` (full list: decision log D1).
+- Older versions of the dataset's GitHub README listed outdated column names (corrected upstream; the README matched the files when checked on 10 Nov 2026); real columns: `train_number`, `line_number`, `arrival_is_canceled`, `departure_is_canceled`; no `train_name`, no `is_canceled` (full list: decision log D1).
 - `delay_in_min` is the departure delay where a departure exists (matches 100% of departure differences, 61.9% of arrival differences); compute the target yourself.
 - ~33% of planned arrival or departure times are NaT by design (trains starting or ending at Würzburg); `.dt.date` gives NaN, so `dropna()` before `min()`/`max()`. 47% of departures start at Würzburg → no scenario B features.
 - `train_line_ride_id` repeats on every day of the month: one trip = ride ID + day (12-hour window in step 01).
