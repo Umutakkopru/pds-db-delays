@@ -43,6 +43,12 @@ FORBIDDEN_COLUMNS = {
     # pipeline bookkeeping
     "source_month",
     "row_role",
+    # added by src/02_clean.py: filters and split labels, never features
+    # (has_prev_stop depends on what the archive contains, not on the train)
+    "exclude_reason",
+    "split_a",
+    "split_b",
+    "has_prev_stop",
 }
 
 # Raw columns of the archive that are not forbidden: they may be used to build

@@ -1,0 +1,13 @@
+split_b,is_through,has_prev_stop,n_rows,pct_delayed
+train,True,True,23926,36.37
+train,True,False,54,40.74
+train,False,False,21275,9.08
+val,True,True,8020,34.95
+val,True,False,30,23.33
+val,False,False,8022,7.68
+test,True,True,15898,
+test,True,False,88,
+test,False,False,15970,
+outside,True,True,66964,43.19
+outside,True,False,6284,8.4
+outside,False,False,63802,8.93
