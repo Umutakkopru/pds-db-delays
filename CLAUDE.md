@@ -189,7 +189,7 @@ pds-db-delays/
 - Bus rows are rail replacement (lines EV, SEV, or the replaced line such as RE7/RB80; up to 1,884 rows in Jul 2024): excluded and counted. IC disappears after Oct 2025 (→ `long_distance`).
 - Line format changes in Dec 2025 ("53" → "RB53"); ARV appears in Dec 2025. Among all Würzburg rows (arrivals and departures, by source file) it is 692 of 238,850 in Jul 2024 – Dec 2025 and 17.1% in Jul – Oct 2026; among modelling rows (approximate cleaning rules) 330 of 152,421 A training departures and 13.2% of test departures. Never use raw `train_type` as a feature.
 - `check_db.py` (outside the repo) saved only Würzburg rows; scenario B needs the earlier stops from `data/interim/`.
-- The share of exactly-on-time departures rises from ~34% (2024) to ~42% (2026); show in the EDA. If errors cluster in single time blocks, re-check collection gaps (D11).
+- The share of exactly-on-time departures rises from ~34% (2024) to ~42% (2026); show in the EDA. Early departures (negative delay) fall from 1–2% of departures per month to ~0.1% from Dec 2025, which explains part of the rise (D11). If errors cluster in single time blocks, re-check collection gaps (D11).
 
 ## Watch-list
 

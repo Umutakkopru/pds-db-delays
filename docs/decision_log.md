@@ -265,6 +265,8 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 
 **Remaining risk.** Gaps of a few hours cannot be seen at day level. If the error analysis shows errors concentrated in single time blocks, this is checked again. The share of exactly-on-time departures rises from ~34% (2024) to ~42% (2026); shown in the EDA.
 
+*Added 10 Nov 2026 (audit E-05):* departures recorded before their planned time make up 1.1–2.4% of planned departures per month until November 2025 and at most 0.14% from December 2025 (the month in which the line format and the ARV label also change). Part of the rise in exactly-on-time departures is therefore early departures that are now recorded as 0. The binary target is not affected (an early departure is "not delayed"); the optional regression would be, so delays are clipped at 0 there. The cause is unknown (no entry in the dataset changelog).
+
 **Report.** Data (data quality), Discussion (limitations).
 
 ## D12 Duplicates, month boundaries, earlier-stop matching (6 Nov 2026)
