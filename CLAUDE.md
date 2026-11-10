@@ -72,7 +72,7 @@ Proposed plan (to be agreed by the group): code and results frozen by **1 Dec 20
 
 - **Target:** `delayed = 1` if `departure_change_time − departure_planned_time ≥ 6 min`, else 0. Computed by us, not taken from `delay_in_min`. Trains that end at Würzburg (no departure) are not in the target.
 - **What the target measures:** the last departure time DB's Timetables API reported (collected four times a day, each run reaching back 6+ hours), normally the realised time; not an independent measurement (limitation, D11).
-- **Cancellations:** cancelled = `departure_is_canceled` at Würzburg. A train whose arrival is cancelled but which still departs is a normal departure. Main target excludes cancellations; sensitivity check with cancellations = delayed (`CANCELED_AS_DELAYED_SENSITIVITY` in `src/config.py`); EDA shows the cancellation share by month, service and hour (falls from ~3–4% in 2024/25 to ~1–2% in 2026).
+- **Cancellations:** cancelled = `departure_is_canceled` at Würzburg. A train whose arrival is cancelled but which still departs is a normal departure. Main target excludes cancellations; sensitivity check with cancellations = delayed (`CANCELED_AS_DELAYED_SENSITIVITY` in `src/config.py`); EDA shows the cancellation share by month, service and hour (falls from about 3.2% on average until Dec 2025 to about 2.1% in 2026; single months 1.0–4.5%).
 - **Scope:** Würzburg Hbf; trains only; rows without a timetable record excluded.
 
 | Scenario | Question | Allowed information |
@@ -185,7 +185,7 @@ pds-db-delays/
 - Earlier stops are searched only inside the same monthly file: a train arriving shortly after midnight on the 1st loses earlier stops from the previous month (a few trains per month, B only).
 - `train_line_station_num` is the position in the full route, not in the data: gaps mean missing stations. Use it for "stops between"; never assume `num − 1` exists before Nov 2025.
 - A monthly file can contain rows planned on the last day of the previous month (Oct 2026: 2 ICE rows on 30 Sep); `source_month` is stored; cleaning drops duplicate ids.
-- ICE rows have no `line_number` (~22.5% of rows); `train_type` is NaN for some rows (no planned times; removed by cleaning) and has odd values such as `RE8`.
+- ICE rows have no `line_number` (22.6–30.7% of the Würzburg rows per month have none); `train_type` is NaN for some rows (no planned times; removed by cleaning) and has odd values such as `RE8`.
 - Bus rows are rail replacement (lines EV, SEV, or the replaced line such as RE7/RB80; up to 1,884 rows in Jul 2024): excluded and counted. IC disappears after Oct 2025 (→ `long_distance`).
 - Line format changes in Dec 2025 ("53" → "RB53"); ARV appears in Dec 2025. Among all Würzburg rows (arrivals and departures, by source file) it is 692 of 238,850 in Jul 2024 – Dec 2025 and 17.1% in Jul – Oct 2026; among modelling rows (approximate cleaning rules) 330 of 152,421 A training departures and 13.2% of test departures. Never use raw `train_type` as a feature.
 - `check_db.py` (outside the repo) saved only Würzburg rows; scenario B needs the earlier stops from `data/interim/`.

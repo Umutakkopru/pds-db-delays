@@ -187,7 +187,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 
 **Decision.** Scenario B trains from 3 Nov 2025 (first full day): train 3 Nov 2025 – Apr 2026, validation May – Jun 2026, test Jul – Oct 2026 (same as A). Set as `FULL_COVERAGE_START` in `src/config.py`; tested.
 
-**Why not use the earlier period.** The model would learn that earlier-stop information exists almost only for ICE trains, a pattern that changes abruptly in November 2025 and does not exist in the test period. The shorter period still contains a winter (Nov 2025 – Feb 2026) and ~25,000 through-train departures.
+**Why not use the earlier period.** The model would learn that earlier-stop information exists almost only for ICE trains, a pattern that changes abruptly in November 2025 and does not exist in the test period. The shorter period still contains a winter (Nov 2025 – Feb 2026) and ~24,000 through-train departures (23,946, see D13).
 
 **Report.** Data (coverage table as evidence), Methodology (scenario B split).
 
@@ -198,7 +198,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 **Method.** Per-month train-type and line-format tables from `src/01_download.py` (`reports/checks/train_types_by_month.csv`, `line_formats_by_month.csv`); `checks/category_check.py` (`reports/checks/line_types_over_time.csv`).
 
 **Results.**
-- **ARV** appears in December 2025 (692 rows), reaches ~2,200 rows per month from February 2026, while RE falls by about the same number (~6,000 → ~3,800 per month). ARV runs exactly the lines RE8, RB8 and RE80, which ran as RE/RB before. ARV stands for Arverio, which operated RE 8 since 2019 and RE 80 since December 2022, i.e. during the whole data period: only the label in the data changed, not the operator.
+- **ARV** appears in December 2025 (692 rows), reaches ~2,200 rows per month from March 2026 (1,741 in February), while RE falls by about the same number (~6,000 → ~3,800 per month). ARV runs exactly the lines RE8, RB8 and RE80, which ran as RE/RB before. ARV stands for Arverio, which operated RE 8 since 2019 and RE 80 since December 2022, i.e. during the whole data period: only the label in the data changed, not the operator.
 - Delay rates of these lines are similar before and after (line 8: 12.4% → 15.4%, partly explained by construction work on RE 8 Würzburg–Lauda, 21 Dec 2025 – 6 Feb 2026; line 80: 8.9% → 7.0%).
 - **Line format** changes at the same time: "53" until November 2025, "RB53" from December 2025. In some 2026 rows `train_type` and the line prefix disagree (line RE10 with type RB).
 - ARV is almost absent in the scenario A training period (692 of 238,850 rows) but 17.1% of test-period rows: a raw `train_type` feature would meet an unseen category in the test set.
@@ -209,7 +209,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 - `line_id`: line prefix when present ("RB53", "RE8"); otherwise `train_type` + digits for RE/RB rows before December 2025; ARV rows keep their line; NULL for long-distance trains. To verify while cleaning: the RE/RB label of a train number before December 2025 matches its line prefix after.
 - `service`: long_distance (ICE, IC, EC), night (NJ, EN), regional (RE, RB, ARV), other.
 - `train_type` kept for reporting only, not as a model feature.
-- ICE rows have no line number (~22.5% of rows); for ICE the train number or route is used instead.
+- ICE rows have no line number (22.6–30.7% of the Würzburg rows per month have none); for ICE the train number or route is used instead.
 
 **Report.** Data (data preparation, category harmonisation), Discussion (error analysis on lines 8 and 80).
 
@@ -227,7 +227,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 
 **Question.** How are cancelled departures treated?
 
-**Evidence.** 1.0% – 4.5% of planned departures per month are cancelled; the share falls from ~3–4% (2024/25) to ~1–2% (2026) (`reports/checks/quality_by_month.csv`).
+**Evidence.** 1.0% – 4.5% of planned departures per month are cancelled; the share falls from about 3.2% on average in Jul 2024 – Dec 2025 (2.0–4.5% per month) to about 2.1% in 2026 (1.0–3.5%) (`reports/checks/quality_by_month.csv`).
 
 **Decision.**
 - Cancelled = `departure_is_canceled` at Würzburg. A train whose arrival is cancelled but which still departs (e.g. now starts at Würzburg) is a normal departure.
@@ -347,7 +347,7 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 
 | Step | Script | Output |
 | --- | --- | --- |
-| Download and filter | `src/01_download.py`, `src/sql/01_filter_month.sql` | `data/interim/wuerzburg_YYYY-MM.parquet` (92 MB for 28 months; raw files 5 GB); `reports/checks/monthly_summary.csv`, `train_types_by_month.csv`, `line_formats_by_month.csv` |
+| Download and filter | `src/01_download.py`, `src/sql/01_filter_month.sql` | `data/interim/wuerzburg_YYYY-MM.parquet` (88 MB for 28 months; raw files 5 GB); `reports/checks/monthly_summary.csv`, `train_types_by_month.csv`, `line_formats_by_month.csv` |
 | Coverage check | `checks/coverage_check.py` | `reports/checks/coverage_by_month.csv` |
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
