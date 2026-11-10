@@ -13,3 +13,23 @@ def test_dst_change_days_in_data_period():
 def test_dst_window_is_a_night_window():
     start, end = config.DST_EXCLUDE_HOURS
     assert 0 <= start < end <= 6
+
+
+def test_month_range_covers_the_data_period():
+    months = config.month_range()
+    assert len(months) == 28
+    assert months[0] == config.FIRST_MONTH and months[-1] == config.LAST_MONTH
+
+
+def test_split_boundaries_are_month_starts_or_full_coverage_start():
+    for scenario, parts in config.SPLITS.items():
+        for part, bounds in parts.items():
+            for bound in bounds:
+                assert bound.endswith("-01") or bound == config.FULL_COVERAGE_START, (scenario, part, bound)
+
+
+def test_scenario_b_validation_lies_inside_scenario_a_validation():
+    # B models are tuned on rows that scenario A never trains on.
+    a0, a1 = config.SPLITS["A"]["val"]
+    b0, b1 = config.SPLITS["B"]["val"]
+    assert a0 <= b0 < b1 <= a1

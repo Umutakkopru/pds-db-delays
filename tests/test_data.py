@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 
 import config
+import features_config
 
 FILES = sorted(config.DATA_INTERIM.glob("wuerzburg_*.parquet"))
 needs_data = pytest.mark.skipif(not FILES, reason="data/interim is empty (run src/01_download.py)")
@@ -70,3 +71,14 @@ def test_previous_stop_coverage_from_full_coverage_start():
     """)
     low = df[df["share"] < 0.95]
     assert len(df) > 0 and low.empty, f"Months with low previous-stop coverage:\n{low}"
+
+
+def test_allowed_and_forbidden_raw_columns_do_not_overlap():
+    assert not (features_config.ALLOWED_RAW_INPUTS & features_config.FORBIDDEN_COLUMNS)
+
+
+@needs_data
+def test_every_raw_column_is_classified():
+    columns = set(_query("SELECT * FROM {files} LIMIT 0").columns)
+    known = features_config.ALLOWED_RAW_INPUTS | features_config.FORBIDDEN_COLUMNS
+    assert not (columns - known), f"Unclassified columns in data/interim: {sorted(columns - known)}"

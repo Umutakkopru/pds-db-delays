@@ -45,6 +45,19 @@ FORBIDDEN_COLUMNS = {
     "row_role",
 }
 
+# Raw columns of the archive that are not forbidden: they may be used to build
+# features, splits or joins. Every raw column must be in exactly one of the two
+# sets (tests/test_data.py), so a new upstream column cannot slip in unnoticed.
+ALLOWED_RAW_INPUTS = {
+    "station_name",
+    "xml_station_name",
+    "eva",
+    "final_destination_station",
+    "train_line_station_num",
+    "arrival_planned_time",
+    "departure_planned_time",
+}
+
 # Naming rule: every feature built from earlier stops of the same trip starts
 # with this prefix. tests/test_leakage.py uses it to keep such features out of
 # scenario A.
