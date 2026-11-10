@@ -151,8 +151,9 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [x] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
 - [x] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
 - [x] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table (`reports/results_validation.md`, 10 Nov; B2 gets holidays after step 03)
-- [ ] EDA notebook, core figures: delay by service, hour, weekday, month; cancellations; coverage; rows without timetable record
-- [ ] Draft the two-page proposal (numbers from `cleaning_counts.csv`); first 6–10 related-work references
+- [x] EDA notebook, core figures: delay by service, hour, weekday, month; cancellations; coverage; rows without timetable record (10 Nov; also propagation and B horizon)
+- [x] Draft the two-page proposal (numbers from `cleaning_counts.csv`): `docs/proposal_draft.md`, 10 Nov
+- [ ] First 6–10 related-work references
 - **Result of the week:** clean table, validation scores of three baselines, proposal draft
 
 **Week 3 — enrichment and features (until 24 Nov 2026)**
@@ -162,7 +163,7 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [ ] `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
 - [ ] Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
 - [ ] Baseline B3 (persistence rule) on validation (D17)
-- [ ] Rest of the EDA (propagation example, exactly-on-time trend, B horizon); write the Data section draft
+- [ ] Write the Data section draft (EDA figures exist; propagation, exactly-on-time trend and B horizon are already in the notebook)
 - [ ] Deploy an empty test app on Streamlit Community Cloud (checks Python and LightGBM versions early)
 - **Result of the week:** feature tables with passing leakage tests, B3 score, Data section draft
 

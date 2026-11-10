@@ -49,6 +49,9 @@ FORBIDDEN_COLUMNS = {
     "split_a",
     "split_b",
     "has_prev_stop",
+    # the calendar date itself would let a model memorise single days;
+    # features are derived from it (weekday, holiday, history window)
+    "service_date",
 }
 
 # Raw columns of the archive that are not forbidden: they may be used to build
@@ -63,6 +66,9 @@ ALLOWED_RAW_INPUTS = {
     "arrival_planned_time",
     "departure_planned_time",
 }
+
+# Columns added by src/02_clean.py that may be used as features or to build them.
+ALLOWED_DERIVED_INPUTS = {"service", "line_id", "is_through"}
 
 # Naming rule: every feature built from earlier stops of the same trip starts
 # with this prefix. tests/test_leakage.py uses it to keep such features out of

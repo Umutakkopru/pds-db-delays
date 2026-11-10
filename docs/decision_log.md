@@ -316,6 +316,7 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 - **Final refit:** hyperparameters, number of trees (early stopping) and the threshold (max F1) are chosen with training-only models on validation; final models are refitted on training + validation with these settings and scored once on the test set.
 - **No class weighting** in LightGBM or logistic regression (keeps probabilities calibrated for the Brier score and the dashboard); the threshold handles the 23% positive rate.
 - **Scenario B results by horizon:** reported by `service` and by planned minutes from the previous stop (< 10, 10–30, > 30 min).
+  - *Note (10 Nov 2026, EDA):* these bins do not fit the data. Measured to the Würzburg departure, no scenario B row is under 10 minutes (regional through trains stop about 10 minutes at Würzburg) and every long-distance train is over 30 minutes; medians are 16 min (regional), 54 min (long-distance) and 78 min (night). Proposed instead: report by service, and within it by 10–20, 20–45 and over 45 minutes. To settle with the results table.
 
 **Alternatives considered.** Training M-A on the B window only (loses the long history that is A's advantage); rolling-origin evaluation (more effort; still optional).
 
@@ -421,6 +422,8 @@ These rows exist only because DB's change feed reported something for them; in 2
 
 **Implemented (10 Nov 2026).** In `src/02_clean.py`; an earlier stop counts when its departure is not cancelled and it has a reported time. Modelling rows with both flags: 23,926 (B train), 8,020 (B validation), 15,898 (test). Through trains without a usable earlier stop: 54, 30 and 88 (the 72 above counted any earlier stop, cancelled ones included). In training and validation, through trains are delayed far more often than trains that start at Würzburg (about 36% against 8–9%; `reports/checks/through_train_counts.csv`).
 
+*Correction (10 Nov 2026, EDA):* that gap is a service effect, not an effect of passing through. Almost all long-distance trains pass through (71,650 of 71,855 in training + validation, 49.0% delayed), while most regional trains start at Würzburg. Inside regional trains the difference disappears: 7.4% delayed when passing through against 8.9% when starting here (`notebooks/01_eda.ipynb`, section 3). `is_through` therefore adds little once the service is known, and scenario B results are reported by service.
+
 **Report.** Methodology (scenario B rows).
 
 ## D21 Evaluation details (10 Nov 2026; proposal from the audit, E-08 and E-09)
@@ -461,6 +464,7 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
 | Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0, B1, B2 on the A validation split, 1,000 day resamples) |
+| EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
 | Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py`, `tests/test_clean.py`, `tests/test_evaluate.py` | 63 passing (10 Nov 2026) |
 
 ## Sources
