@@ -40,7 +40,8 @@ Key numbers (all 28 months, Würzburg Hbf):
 | Months | 28 (Jul 2024 – Oct 2026), none missing | `reports/checks/monthly_summary.csv` |
 | Würzburg rows (arrivals and departures) | 365,502 | same |
 | Planned departures per month (trains, before cleaning) | 7,549 – 9,622 | `reports/checks/quality_by_month.csv` |
-| Share departing 6+ min late per month | 19.2% – 30.0% | same |
+| Share of all planned departures that depart 6+ min late, per month (cancelled departures in the denominator) | 19.2% – 30.0% | same (`pct_delayed_6`) |
+| Share departing 6+ min late per month among departures that ran (as in the target) | 19.4% – 31.1% | same (`pct_delayed_6_not_canceled`; row added 10 Nov 2026, audit D-06) |
 | Share of cancelled departures per month | 1.0% – 4.5% | same |
 | Duplicate ids across all files | 0 | `checks/data_quality_check.py` output |
 | Stations in the archive | 107–108 until 1 Nov 2025; ~5,300 from 2 Nov 2025 | `checks/coverage_check.py` output |
