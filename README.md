@@ -27,11 +27,14 @@ python src/01_download.py --months 2026-10 --show-example
 # 2. All months (July 2024 – October 2026, ~5 GB download)
 python src/01_download.py
 
+# 3. Clean: one row per planned departure, target, exclusion reasons
+python src/02_clean.py
+
 # Whole pipeline (steps that exist so far)
 python run_pipeline.py
 ```
 
-Outputs of step 1: `data/interim/wuerzburg_YYYY-MM.parquet` (Würzburg rows plus earlier stops of the same trips) and per-month checks in `reports/checks/`.
+Outputs of step 1: `data/interim/wuerzburg_YYYY-MM.parquet` (Würzburg rows plus earlier stops of the same trips) and per-month checks in `reports/checks/`. Outputs of step 2: `data/processed/wuerzburg_clean.parquet` (every planned departure; modelling rows have an empty `exclude_reason`), `data/processed/wuerzburg_prev_stops.parquet`, and `reports/checks/cleaning_counts.csv`.
 
 ```bash
 # Data checks (after step 1); results in reports/checks/
@@ -44,7 +47,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05` (step `01` exists; `02`–`05` are planned), `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`05` (steps `01` and `02` exist; `03`–`05` are planned), `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
 | `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |

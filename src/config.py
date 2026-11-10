@@ -30,6 +30,13 @@ TIMEZONE = "Europe/Berlin"
 # nights are excluded from the target (a few dozen rows per night).
 DST_EXCLUDE_HOURS = (0, 5)  # [00:00, 05:00) local time
 
+# Target: a departure counts as delayed from this many minutes (decision log D2).
+DELAY_THRESHOLD_MIN = 6
+
+# Departure delays below this value are data errors (wrong date or hour in the
+# change time) and are excluded as 'invalid_delay' (decision log D19).
+INVALID_DELAY_BELOW_MIN = -30
+
 # Cancellation handling: the main target excludes cancelled departures (DB's
 # punctuality definition); a sensitivity check counts them as delayed.
 CANCELED_AS_DELAYED_SENSITIVITY = True
