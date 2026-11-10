@@ -55,7 +55,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 | `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
 | `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
-| `notebooks/` | EDA only, no pipeline logic |
+| `notebooks/` | EDA only, no pipeline logic (`01_eda.ipynb`: training and validation period, writes `reports/figures/eda_*.png`) |
 | `app/` | Streamlit dashboard (planned) |
 | `models/` | Saved models (planned) |
 | `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`); final results table and figures (planned) |

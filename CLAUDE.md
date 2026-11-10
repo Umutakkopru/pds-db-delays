@@ -177,7 +177,7 @@ pds-db-delays/
 ├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md
 ├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py*, 04_features.py*, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
 ├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py
-├── notebooks/, app/streamlit_app.py*, models/
+├── notebooks/01_eda.ipynb, app/streamlit_app.py*, models/
 └── reports/{figures,checks}/, reports/results_validation.md, reports/results.md*
 ```
 
@@ -197,6 +197,7 @@ pds-db-delays/
 - Bus rows are rail replacement (lines EV, SEV, or the replaced line such as RE7/RB80; up to 1,884 rows in Jul 2024): excluded and counted. IC disappears after Oct 2025 (→ `long_distance`).
 - Line format changes in Dec 2025 ("53" → "RB53"); ARV appears in Dec 2025. Among all Würzburg rows (arrivals and departures, by source file) it is 692 of 238,850 in Jul 2024 – Dec 2025 and 17.1% in Jul – Oct 2026; among modelling rows (approximate cleaning rules) 330 of 152,421 A training departures and 13.2% of test departures. Never use raw `train_type` as a feature.
 - `check_db.py` (outside the repo) saved only Würzburg rows; scenario B needs the earlier stops from `data/interim/`.
+- EDA (training + validation, `notebooks/01_eda.ipynb`): delayed 8.5% regional, 48.8% long-distance, 66.6% night; always report results per service. The gap between through trains and trains starting at Würzburg (36% vs 9%) is a service effect: inside regional trains it is 7.4% vs 8.9%. Previous-stop delay vs outcome: 6–9 min late at the previous stop → only 38% delayed at Würzburg; 10–19 min → 80%. No scenario B row is less than 10 planned minutes after its previous stop (the D13 horizon bins need new limits).
 - The share of exactly-on-time departures rises from ~34% (2024) to ~42% (2026); show in the EDA. Early departures (negative delay) fall from 1–2% of departures per month to ~0.1% from Dec 2025, which explains part of the rise (D11). If errors cluster in single time blocks, re-check collection gaps (D11).
 
 ## Watch-list
@@ -220,7 +221,7 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. `src/evaluate.py` (metrics, max-F1 threshold, paired day-block bootstrap) and the baselines B0–B2 exist; `src/05_train.py` fits them on the A training split and writes `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 (timetable columns only) PR-AUC 0.528, ROC-AUC 0.797; B2 − B1 = +0.015 PR-AUC with the interval above zero. The script never loads test-period rows. Tests: 63 passed. Branches `02-clean` and `03-baselines` (built on it) are to merge. **Next action:** EDA notebook (core figures) and the proposal draft; then `03_enrich`.
+**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. `src/evaluate.py` (metrics, max-F1 threshold, paired day-block bootstrap) and the baselines B0–B2 exist; `src/05_train.py` fits them on the A training split and writes `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 (timetable columns only) PR-AUC 0.528, ROC-AUC 0.797; B2 − B1 = +0.015 PR-AUC with the interval above zero. The script never loads test-period rows. Tests: 63 passed. The EDA notebook (`notebooks/01_eda.ipynb`, training and validation period only) and its 12 figures exist. Branches `02-clean`, `03-baselines` and `04-eda` (each built on the previous one) are to merge. **Next action:** proposal draft; then `03_enrich`.
 
 **Now (week 2, until 17 Nov)** — in this order
 
@@ -231,7 +232,7 @@ pds-db-delays/
 - [ ] Download the chair's report template; collect names and matriculation numbers for the proposal
 - [x] `02_clean` with `exclude_reason`, `is_through`, `has_prev_stop` + tests + `cleaning_counts.csv` per split (D19, D20) — 10 Nov; branch `02-clean` to merge
 - [x] `src/evaluate.py` (metrics, day-block bootstrap, tests) + baselines B0, B1, B2 on validation (D22) — 10 Nov; branch `03-baselines` to merge
-- [ ] EDA notebook: core figures only (delay by service, hour, month; cancellations; coverage; rows without plan record)
+- [x] EDA notebook: core figures only (delay by service, hour, month; cancellations; coverage; rows without plan record) — 10 Nov, `notebooks/01_eda.ipynb`, 12 figures in `reports/figures/`; branch `04-eda` to merge
 - [ ] Draft the two-page proposal; collect 6–10 related-work references; ask the supervisor about the GenAI documentation with the proposal
 
 **Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` (weather, public and Bavarian school holidays); `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.
