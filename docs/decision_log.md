@@ -45,6 +45,11 @@ Key numbers (all 28 months, Würzburg Hbf):
 | --- | --- | --- |
 | Months | 28 (Jul 2024 – Oct 2026), none missing | `reports/checks/monthly_summary.csv` |
 | Würzburg rows (arrivals and departures) | 365,502 | same |
+| Planned departures at Würzburg (all, before exclusions) | 247,716 | `reports/checks/cleaning_counts.csv` (`src/02_clean.py`) |
+| Excluded: cancelled 6,431; without timetable record 7,290; bus 3,607; DST nights 51; invalid delay 4; duplicate id 0 | 17,383 | same |
+| Modelling rows (scenario A: train / validation / test) | 230,333 (152,384 / 45,993 / 31,956) | same |
+| Share delayed, modelling rows of training + validation | 24.8% (train 25.7%, validation 22.0%) | same; test-period rates are not written before the final run |
+| Scenario B rows (`is_through` and `has_prev_stop`; train / validation / test) | 23,926 / 8,020 / 15,898 | `reports/checks/through_train_counts.csv` |
 | Planned departures per month (trains, before cleaning) | 7,549 – 9,622 | `reports/checks/quality_by_month.csv` |
 | Share of all planned departures that depart 6+ min late, per month (cancelled departures in the denominator) | 19.2% – 30.0% | same (`pct_delayed_6`) |
 | Share departing 6+ min late per month among departures that ran (as in the target) | 19.4% – 31.1% | same (`pct_delayed_6_not_canceled`; row added 10 Nov 2026, audit D-06) |
@@ -400,6 +405,8 @@ These rows exist only because DB's change feed reported something for them; in 2
 - A departure delay below −30 minutes is invalid (`invalid_delay`).
 - `line_id` is built by format, not by date: a line with a letter prefix is used as it is; a digit-only line gets the train type as prefix. If train type and line prefix disagree, the line prefix wins; the check via `train_number` (D7) stays.
 
+**Implemented (10 Nov 2026).** `src/02_clean.py`, `src/sql/02_clean.sql`, constants `DELAY_THRESHOLD_MIN` and `INVALID_DELAY_BELOW_MIN` in `src/config.py`, tests in `tests/test_clean.py`. Result: 247,716 planned departures, 230,333 modelling rows; excluded 7,290 without timetable record, 6,431 cancelled, 3,607 buses, 51 in DST nights, 4 with invalid delay, 0 duplicates (`reports/checks/cleaning_counts.csv`). One detail was added while implementing: a digit-only line of an ARV row (178 departures, mainly line 8 in August 2026) cannot take the train type as prefix, so it takes the usual prefixed line of the same train number (RE8 or RB8) and falls back to "RE" + digits. The result is 13 regional lines with the same names before and after December 2025; no regional modelling row is without `line_id`. The four services are regional (RE, RB, ARV), long_distance (ICE, IC, EC), night (NJ, EN) and other (UEX, DBK).
+
 **Alternatives considered.** Deleting rows as planned before (each sensitivity check would need its own cleaning run).
 
 **Report.** Data (cleaning rules with counts).
@@ -411,6 +418,8 @@ These rows exist only because DB's change feed reported something for them; in 2
 **Evidence.** Modelling rows before 3 Nov 2025: 73,275 with a planned arrival, 67,105 with an earlier stop in the data. Test period: 15,993 and 15,921 (72 differ).
 
 **Decision.** Two columns: `is_through` = planned arrival at Würzburg present; `has_prev_stop` = at least one non-cancelled earlier stop in the data. Scenario B (M-A′, M-B, B3) uses rows where both are true, because its prediction moment is the departure from the previous stop. Through trains without an earlier stop are counted per split and reported.
+
+**Implemented (10 Nov 2026).** In `src/02_clean.py`; an earlier stop counts when its departure is not cancelled and it has a reported time. Modelling rows with both flags: 23,926 (B train), 8,020 (B validation), 15,898 (test). Through trains without a usable earlier stop: 54, 30 and 88 (the 72 above counted any earlier stop, cancelled ones included). In training and validation, through trains are delayed far more often than trains that start at Würzburg (about 36% against 8–9%; `reports/checks/through_train_counts.csv`).
 
 **Report.** Methodology (scenario B rows).
 
@@ -450,7 +459,8 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Coverage check | `checks/coverage_check.py` | `reports/checks/coverage_by_month.csv` |
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
-| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py` | 26 passing (10 Nov 2026) |
+| Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
+| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py`, `tests/test_clean.py` | 49 passing (10 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

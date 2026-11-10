@@ -139,15 +139,16 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] Plan review (7 Nov): D13 evaluation protocol, D14 baseline and history definitions, D15 dashboard replay, D16 disruption flags forbidden; CLAUDE.md split into CLAUDE.md + this file
 - [x] Independent audit (10 Nov): `docs/audit_2026-11-10.md`, 37 findings, fixes on branch `audit-2026-11-10`
 - [x] Audit recommendations recorded as proposals D17–D22 (10 Nov)
-- [ ] Confirm D1–D22 in the group; merge the audit branch
+- [x] Audit branch merged into `main` (10 Nov)
+- [ ] Confirm D1–D22 in the group
 - [ ] Share `docs/project_plan.md`, `docs/decision_log.md` and `CLAUDE.md` with both members and get agreement (D1–D22)
-- [ ] Write the cleaning step and save `wuerzburg_clean.parquet`
+- [x] Cleaning step written (10 Nov): `wuerzburg_clean.parquet`, 230,333 modelling rows
 
 **Week 2 — cleaning, baselines, proposal draft (until 17 Nov 2026)**
 
 - [ ] Register the group by 15 Nov 2026 (hard deadline)
 - [ ] Merge the audit branch, push to GitHub, download the chair's template
-- [ ] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
+- [x] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
 - [ ] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
 - [ ] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table
 - [ ] EDA notebook, core figures: delay by service, hour, weekday, month; cancellations; coverage; rows without timetable record
