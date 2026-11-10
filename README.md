@@ -12,10 +12,11 @@ We predict whether a train departs Würzburg Hbf 6 or more minutes late (Deutsch
 brew install libomp                 # needed by LightGBM on macOS
 python3.10 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pip freeze > requirements-lock.txt  # once; commit the lock file
-pytest                              # leakage tests must pass
+pip install -r requirements-lock.txt  # exact versions (built with Python 3.10), same for every member
+pytest                                # all tests must pass
 ```
+
+`requirements.txt` lists the direct dependencies with minimum versions. Only when a dependency is added or updated on purpose: `pip install -r requirements.txt`, then `pip freeze > requirements-lock.txt`, and commit both files.
 
 ## Run
 
