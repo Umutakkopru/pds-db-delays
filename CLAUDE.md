@@ -159,16 +159,18 @@ Results table (`reports/results.md`, written by `05_train.py`): Model | Scenario
 - Download: `huggingface_hub.hf_hub_download(repo_id="piebro/deutsche-bahn-data", repo_type="dataset", revision=config.HF_REVISION, filename="monthly_processed_data/data-YYYY-MM.parquet")`; `HF_TOKEN` makes it faster. The revision is fixed in `src/config.py` because the maintainer reprocesses past months; `tests/test_data.py` compares the local row counts with `reports/checks/monthly_summary.csv`.
 - Verified code: `src/01_download.py` + `src/sql/01_filter_month.sql` on all 28 months (12,975 Würzburg rows in Oct 2026, identical to the first data check).
 
+Files marked * are planned and do not exist yet (10 Nov 2026).
+
 ```text
 pds-db-delays/
 ├── CLAUDE.md, CLAUDE.local.md (gitignored), README.md, requirements*.txt, pytest.ini, run_pipeline.py
-├── data/{raw,interim,processed}/   # gitignored
+├── data/{raw,interim,processed*}/  # gitignored
 ├── checks/                          # coverage_check.py, category_check.py, data_quality_check.py
-├── docs/decision_log.md, docs/project_plan.md
-├── src/config.py, features_config.py, 01_download.py … 05_train.py, evaluate.py, sql/
-├── tests/test_leakage.py, test_config.py
-├── notebooks/, app/streamlit_app.py, models/
-└── reports/{figures,checks}/, reports/results.md
+├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md
+├── src/config.py, features_config.py, 01_download.py, 02_clean.py* … 05_train.py*, evaluate.py*, sql/
+├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py
+├── notebooks/, app/streamlit_app.py*, models/
+└── reports/{figures,checks}/, reports/results.md*
 ```
 
 ## Known gotchas

@@ -44,15 +44,15 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05`, `config.py` (paths, splits, seed), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`05` (step `01` exists; `02`–`05` are planned), `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
-| `tests/` | Leakage and configuration tests, run before every training run |
+| `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
 | `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
 | `notebooks/` | EDA only, no pipeline logic |
-| `app/` | Streamlit dashboard |
-| `models/` | Saved models |
-| `reports/` | Results table, figures, data checks |
+| `app/` | Streamlit dashboard (planned) |
+| `models/` | Saved models (planned) |
+| `reports/` | Data checks (`reports/checks/`); results table and figures (planned) |
 | `data/` | Raw, interim and processed data (not in Git) |
 
 ## AI use
