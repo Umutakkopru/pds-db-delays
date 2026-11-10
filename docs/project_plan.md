@@ -117,7 +117,8 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. Ea
 
 **Week 1 — setup and data (until 10 Nov 2026)**
 
-- [x] Third member found (9 Nov 2026); register the group by 15 Nov
+- [x] Third member found (9 Nov 2026)
+- [ ] **Register the group in the course room by 15 Nov 2026, 23:59** (hard deadline; not done on 10 Nov)
 - [x] Assignment brief added and checked: submission 18 Jan 2027, presentation 25 Jan 2027 corrected
 - [ ] Download the chair's report template into `../Informations/`
 - [x] Repository scaffold: folders, `README.md`, `requirements.txt`, `.gitignore`, `pytest.ini`, `src/config.py`, `run_pipeline.py`
