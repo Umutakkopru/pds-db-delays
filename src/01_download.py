@@ -126,7 +126,7 @@ def write_checks(con: duckdb.DuckDBPyConnection) -> None:
                ROUND(100 * AVG(CASE WHEN regexp_matches(line_number, '^[A-Za-z]') THEN 1 ELSE 0 END), 1)
                    AS pct_with_prefix,
                ROUND(100 * AVG(CASE WHEN line_number IS NULL THEN 1 ELSE 0 END), 1) AS pct_missing,
-               string_agg(DISTINCT line_number, ', ') AS line_values
+               string_agg(DISTINCT line_number, ', ' ORDER BY line_number) AS line_values
         FROM b GROUP BY month ORDER BY month
     """).df()
     lines.to_csv(config.CHECKS / "line_formats_by_month.csv", index=False)
