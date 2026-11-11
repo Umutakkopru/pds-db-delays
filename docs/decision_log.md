@@ -320,6 +320,7 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 - **No class weighting** in LightGBM or logistic regression (keeps probabilities calibrated for the Brier score and the dashboard); the threshold handles the 23% positive rate.
 - **Scenario B results by horizon:** reported by `service` and by planned minutes from the previous stop (< 10, 10–30, > 30 min).
   - *Note (10 Nov 2026, EDA):* these bins do not fit the data. Measured to the Würzburg departure, no scenario B row is under 10 minutes (regional through trains stop about 10 minutes at Würzburg) and every long-distance train is over 30 minutes; medians are 16 min (regional), 54 min (long-distance) and 78 min (night). Proposed instead: report by service, and within it by 10–20, 20–45 and over 45 minutes. To settle with the results table.
+  - *Implemented (11 Nov 2026):* `src/06_error_analysis.py` reports scenario B by service and by the horizon bins 10–20, 20–45 and over 45 minutes.
 
 **Alternatives considered.** Training M-A on the B window only (loses the long history that is A's advantage); rolling-origin evaluation (more effort; still optional).
 
@@ -520,6 +521,18 @@ Paired differences (PR-AUC): M-A − B2 = +0.068 [+0.059, +0.077]; M-B − M-A�
 
 **Report.** Methodology (features, leakage safeguards).
 
+## Error analysis on validation: findings (11 Nov 2026)
+
+Not a decision; recorded here because the Results and Discussion sections are written from it. Source: `src/06_error_analysis.py` → `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`. The same script runs unchanged on the test period after the final run.
+
+- **M-A is more than a service detector, but only for long-distance and night trains.** Inside a service (where the service itself cannot help) M-A reaches ROC-AUC 0.701 for long-distance trains (B2: 0.616), 0.832 for night trains (0.721) and 0.661 for regional trains (0.628). For regional trains the PR-AUC is 0.158 at a base rate of 0.086, and at M-A's overall threshold (0.289) the recall is 0 for 10 of the 11 regional lines: the day before, the model practically never calls a regional train delayed.
+- **Bad months are underestimated.** In January 2026 the observed delay rate is 29.4%, the mean prediction 21.7%; in the other validation months they differ by at most 2.5 points. The 28-day history reacts too slowly to a sudden bad period.
+- **Weather slices.** Below 0 °C the delay rate is 27.7% (against 21.3%) and the mean prediction 20.8%: frost days are underestimated. Rain or snow in the departure hour makes no difference to the delay rate (22.0% in both).
+- **Scenario B, rule against model.** The 6-minute rule B3 is right in 37.4% of the cases when the train was 6–9 minutes late at the previous stop; M-B in 72.7% (454 against 198 wrong predictions among 725 departures). For 10–19 minutes: 80.1% against 90.0%. Below 6 minutes the two are equal. The whole gain of M-B over B3 comes from trains that are moderately late at the previous stop.
+- **Scenario B by service.** PR-AUC M-A′ / B3 / M-B: long-distance 0.650 / 0.922 / 0.940; regional 0.151 / 0.670 / 0.764; night 0.868 / 0.901 / 0.947. The en-route information helps regional trains most in relative terms.
+- **Calibration.** Expected calibration error 0.017 (M-A) and 0.016 (M-B) without any calibration step; M-A is slightly too low between 40% and 60%, M-B slightly too high between 50% and 70%.
+- **Confusion matrices (validation thresholds).** M-A: 6,734 hits, 3,382 missed delays, 5,929 false alarms. M-B: 2,291 hits, 512 missed, 275 false alarms. B3: 2,352 hits, 451 missed, 682 false alarms.
+
 ---
 
 ## Pipeline and checks so far
@@ -535,7 +548,8 @@ Paired differences (PR-AUC): M-A − B2 = +0.068 [+0.059, +0.077]; M-B − M-A�
 | Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
 | Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py` | 105 passing (11 Nov 2026) |
+| Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py` | 112 passing (11 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

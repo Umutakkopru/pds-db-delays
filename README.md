@@ -39,6 +39,9 @@ python src/04_features.py
 # 6. Baselines B0-B3 and LightGBM M-A, M-A', M-B on the validation splits (the test period is not touched)
 python src/05_train.py
 
+# 7. Error analysis of the validation scores (slices, calibration, largest errors)
+python src/06_error_analysis.py
+
 # Whole pipeline (steps that exist so far)
 python run_pipeline.py
 ```
@@ -65,7 +68,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 | `notebooks/` | EDA only, no pipeline logic (`01_eda.ipynb`: training and validation period, writes `reports/figures/eda_*.png`) |
 | `app/` | Streamlit dashboard (planned) |
 | `models/` | Saved models (planned) |
-| `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`); final results table and figures (planned) |
+| `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`), error analysis (`error_analysis_validation.md`), figures; final results table (planned) |
 | `data/` | Raw, interim and processed data (not in Git) |
 
 ## AI use

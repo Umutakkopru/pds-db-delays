@@ -173,7 +173,7 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] Sanity checks on validation: single-feature AUC, shuffled target (11 Nov)
 - [ ] SHAP top features make sense (validation)
 - [x] Weather ablation on validation (D21): +0.006 PR-AUC (11 Nov)
-- [ ] Error-analysis and slice code, written and tried on validation
+- [x] Error-analysis and slice code, written and tried on validation (11 Nov): `src/06_error_analysis.py`
 - [ ] Refit on training + validation; **final run on the test set, once** (`--final`); results table with n and base rate per row
 - [ ] Write the Methodology section draft
 - [ ] **Freeze the minimum version**: no change to features, models or settings after this point

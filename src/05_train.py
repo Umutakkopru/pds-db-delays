@@ -15,6 +15,7 @@ script never loads test-period rows.
 Reads:  data/processed/features_a.parquet, features_b.parquet   (step 4; rows of train and validation)
 Writes: reports/results_validation.md                           (validation scores with 95% intervals)
         reports/checks/tuning_m_a.csv, tuning_m_a_prime.csv, tuning_m_b.csv   (all settings tried)
+        data/processed/predictions_val_a.parquet, predictions_val_b.parquet   (scores per validation row)
 
 Usage: python src/05_train.py
        python src/05_train.py --resamples 200                   # faster bootstrap while developing
@@ -36,6 +37,23 @@ FEATURE_FILES = {
     "B": config.DATA_PROCESSED / "features_b.parquet",
 }
 RESULTS_VALIDATION = config.REPORTS / "results_validation.md"
+# Scores of every model per validation row, read by src/06_error_analysis.py.
+PREDICTION_FILES = {
+    "A": config.DATA_PROCESSED / "predictions_val_a.parquet",
+    "B": config.DATA_PROCESSED / "predictions_val_b.parquet",
+}
+SHORT_NAMES = {"B0": "b0", "B1": "b1", "B2": "b2", "B3": "b3", "M-A′": "m_a_prime", "M-A": "m_a", "M-B": "m_b"}
+
+
+def save_predictions(rows: pd.DataFrame, scores: dict, path) -> None:
+    """Write id, day, outcome and one score column per model (column name = short model name)."""
+    out = rows[["id", "service_date", baselines.TARGET]].copy()
+    for name, values in scores.items():
+        if "without weather" in name:
+            continue
+        short = next(v for k, v in SHORT_NAMES.items() if name.startswith(k))
+        out[short] = np.asarray(values, dtype=float)
+    out.to_parquet(path, index=False)
 DEVELOPMENT_SPLITS = ("train", "val")  # the test split is loaded only by the final run
 
 
@@ -200,6 +218,7 @@ def main() -> None:
     b0, b1, b2 = list(base)
     diff_a = difference_table(boot_a, [(b1, b0), (b2, b1), ("M-A LightGBM", b2), ("M-A LightGBM", "M-A without weather")])
     checks = sanity_checks(m_a, train, val, m_a["val_proba"])
+    save_predictions(val, scores, PREDICTION_FILES["A"])
 
     # ---- scenario B rows: validation split of scenario B
     y_b = val_b[baselines.TARGET].to_numpy()
@@ -214,6 +233,7 @@ def main() -> None:
         fixed_threshold={rule: float(config.DELAY_THRESHOLD_MIN)}, not_a_probability=(rule,),
     )
     name_a, name_ap, name_b = list(scores_b)[-3:]
+    save_predictions(val_b, scores_b, PREDICTION_FILES["B"])
     diff_b = difference_table(boot_b, [(rule, b2), (name_ap, name_a), (name_b, name_ap), (name_b, rule)])
 
     chosen = pd.DataFrame([
