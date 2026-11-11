@@ -1,6 +1,6 @@
 # Report section 3: Data (draft)
 
-> Draft of 11 Nov 2026 for section 3 of the final report (planned length 3–4 pages, `docs/project_plan.md` section 7). The text between the two lines is the section; it has about 1,750 words, five tables and four figures. Decisions D1–D25 are proposals until the group confirms them; if a decision changes, the matching paragraph changes with it. Every number is traced to a file in "Where the numbers come from" at the end. **No delay rate of the test period appears in this section** (evaluation protocol in `CLAUDE.md`); the cells are marked and can be filled after the final run. Citations are written as [Author year] and are replaced by the template's citation style.
+> Draft of 11 Nov 2026 for section 3 of the final report (planned length 3–4 pages, `docs/project_plan.md` section 7). The text between the two lines is the section; it has about 2,000 words of text, five tables and four figures. Decisions D1–D25 are proposals until the group confirms them; if a decision changes, the matching paragraph changes with it. Every number is traced to a file in "Where the numbers come from" at the end. **No delay rate of the test period appears in this section** (evaluation protocol in `CLAUDE.md`); the cells are marked and can be filled after the final run. Citations are written as [Author year] and are replaced by the template's citation style.
 
 ---
 
@@ -165,5 +165,5 @@ All figures in this part use the training and validation periods only (July 2024
 - [ ] Group confirms D1–D25 (this section rests on D1, D6–D12, D18–D20, D23).
 - [ ] References in the template's style: the dataset [piebro 2024], Deutsche Bahn's punctuality definition [DB 2026], Open-Meteo [Open-Meteo 2026], the school holiday announcement [BayMBl. 2022 Nr. 747], the `holidays` package. Links are in the "Sources" list of `docs/decision_log.md` and in `reference/README.md`.
 - [ ] After the final run: decide whether Table 3 and Table 4 get the test-period delay rates, or whether they stay in section 5 only.
-- [ ] Length in the template (target 3–4 pages). If it is too long, drop first: Figure 3, then Table 4's "Other" row and the weekday sentence.
+- [ ] **Length.** With about 2,000 words, five tables and four figures the draft is probably 5–6 pages in the template, above the planned 3–4. Shorten once it is in the template. Proposed order of cuts: Figure 3 (the month ranges stay in the text); Figure 1 (Table 2 carries the counts); Table 5 or Figure 4 (they show the same numbers); the recording-change paragraph in 3.3 moves to the Discussion; Table 4's "Other" row and the weekday sentence.
 - [ ] Figures are embedded from `reports/figures/`; check that titles and axis labels are readable at the template's column width.
