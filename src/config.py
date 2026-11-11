@@ -73,6 +73,14 @@ LAST_MONTH = "2026-10"
 # 2 Nov 2025 (dataset changelog); 3 Nov 2025 is the first full day.
 FULL_COVERAGE_START = "2025-11-03"
 
+# History features (decision log D14, D22): for a departure on day D the delay
+# rate is taken over the service dates D - 29 ... D - 2, i.e. [D - 29, D - 1 00:00).
+# Scenario A is asked on D - 1, when that day is not complete yet.
+HISTORY_FIRST_DAY_BACK = 29
+HISTORY_LAST_DAY_BACK = 2
+# A history rate is used only if its window holds at least this many departures.
+MIN_HISTORY_ROWS = 20
+
 SEED = 42
 
 # Uncertainty: number of bootstrap resamples of whole days (decision log D13).

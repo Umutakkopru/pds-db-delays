@@ -53,13 +53,15 @@ def class_metrics(y_true, y_score, threshold: float) -> dict[str, float]:
     }
 
 
-def score_metrics(y_true, y_score) -> dict[str, float]:
-    """PR-AUC, ROC-AUC and Brier score of predicted probabilities."""
-    return {
+def score_metrics(y_true, y_score, probability: bool = True) -> dict[str, float]:
+    """PR-AUC and ROC-AUC of a score; the Brier score only if the score is a probability."""
+    out = {
         "pr_auc": float(average_precision_score(y_true, y_score)),
         "roc_auc": float(roc_auc_score(y_true, y_score)),
-        "brier": float(brier_score_loss(y_true, y_score)),
     }
+    if probability:
+        out["brier"] = float(brier_score_loss(y_true, y_score))
+    return out
 
 
 def day_block_bootstrap(

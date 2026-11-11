@@ -4,7 +4,7 @@ Last updated: 11 Nov 2026 · PDS Group 18 · Practical Data Science, Information
 
 This is the working context for every session with an AI assistant (Claude Code reads it automatically). It holds the working rules, decisions, pipeline and current status. Details live in two more files that are read **only when the task needs them** (see Read-when).
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D23, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D24, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## Instructions for the AI assistant
 
@@ -74,6 +74,7 @@ Proposed plan (to be agreed by the group): minimum version (baselines, LightGBM,
 | D21 | Refit keeps tree count and threshold; at most 20 tuning settings; weather ablation on validation |
 | D22 | Baselines before enrichment; simple history features first; Bavarian school holidays first; freeze 1 Dec (minimum) and 8 Dec (extensions) |
 | D23 | Weather from Open-Meteo downloaded in UTC and converted to local time (its own "Europe/Berlin" option ignores summer time); Bavarian public holidays incl. 15 Aug, school holidays from the official list, bridge days |
+| D24 | Feature tables: 21 scenario A features (timetable, calendar, weather, 28-day history per service × hour, route and overall), plus 4 previous-stop features for scenario B; destination is the route group of long-distance trains |
 
 ## Problem definition
 
@@ -104,7 +105,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 1. **Download and filter** (`src/01_download.py`, `src/sql/01_filter_month.sql`) — done. Per month: Würzburg rows plus earlier stops of the same trip (same `train_line_ride_id`, lower stop number, planned within 12 h before the Würzburg arrival), linked by `wuerzburg_id`, with `row_role` and `source_month`. Output `data/interim/wuerzburg_YYYY-MM.parquet`; checks in `reports/checks/`.
 2. **Clean** (`src/02_clean.py` + `src/sql/02_clean.sql`) — done (10 Nov 2026: 247,716 planned departures, 230,333 modelling rows; counts in `reports/checks/cleaning_counts.csv` and `through_train_counts.csv`). Input = `row_role = 'wuerzburg'` rows with a planned departure (trains that end at Würzburg are not part of the target). **No departure is deleted** (D19): each one gets `exclude_reason` (first matching rule: `bus`, `no_plan_record`, `canceled`, `dst_night` via `config.dst_change_days()` and `DST_EXCLUDE_HOURS`, `invalid_delay` = delay below −30 min, `duplicate_id`); modelling rows have `exclude_reason` NULL. Compute `dep_delay` and `delayed`; `service_date` = date of the Würzburg planned departure; build `line_id`, `service`, `is_through` (planned arrival present) and `has_prev_stop` (a non-cancelled earlier stop exists) (D20). Write the count per reason and split to `reports/checks/cleaning_counts.csv`. Save earlier stops separately (`wuerzburg_prev_stops.parquet`), keyed by `wuerzburg_id` and `id`. Output `data/processed/wuerzburg_clean.parquet`.
 3. **Enrich** (`src/03_enrich.py`) — done (11 Nov 2026). Hourly weather at the station from the Open-Meteo archive, **downloaded in UTC and converted to naive local time** (`timezone=Europe/Berlin` in the API is a fixed +1 h offset and would be one hour off in summer); raw JSON kept in `data/raw/weather/`. Calendar per day: public holidays (Bavaria incl. Mariä Himmelfahrt, `holidays` package), school holidays (Bavaria, `reference/school_holidays_bavaria.csv`), bridge days. Output `data/processed/weather_hourly.parquet` (key `local_hour`) and `calendar_daily.parquet` (key `service_date`), joined in step 04; summary in `reports/checks/enrichment_summary.csv` (D23).
-4. **Features** (`src/04_features.py` + `src/sql/04_features.sql`): scenario A and B tables; history from a daily aggregate table (key × day) joined over [D − 29, D − 1). First version: keys `service` × hour and `line_id` / route group; the train-number key with its fallback comes after the first full results table (D22).
+4. **Features** (`src/04_features.py` + `src/sql/04_features.sql`, `04_features_b.sql`) — done (11 Nov 2026). `features_a.parquet` (230,333 modelling rows, 21 features) and `features_b.parquet` (47,844 through trains with an earlier stop in a scenario B split, 25 features); columns are exactly `META_COLUMNS + FEATURES[scenario]` from `src/features_config.py`. History = delay rate over the service dates D − 29 … D − 2 per `service` × hour, per route (line, or destination for non-regional trains) and overall, from a daily aggregate with a window; missing below 20 departures. Propagation = delay at the last and second-to-last usable earlier stop, planned minutes to the Würzburg departure, stops between. The train-number key with its fallback comes after the first full results table (D22). Details: D24.
 5. **Train and evaluate** (`src/05_train.py`, shared metrics and the day-block bootstrap in `src/evaluate.py`): fixed seeds; `src/evaluate.py` and the baselines B0–B2 are written directly after step 2 and scored on validation; one results table `reports/results.md`; figures in `reports/figures/`. The test run is a single command (`--final`) that refuses to run twice.
 
 **Category columns (D7):**
@@ -116,11 +117,11 @@ Why: start = first month in the archive (two winters); end = last complete month
 
 | Group | Examples | Scenario |
 | --- | --- | --- |
-| Timetable | Service, line_id / route group, destination, planned hour, weekday, stop position in route | A, B |
-| Calendar | Public holiday, school holiday, bridge day, Friday and Sunday evening peaks | A, B |
-| Weather | Temperature, precipitation, wind speed, snow (observed weather stands in for a forecast) | A, B |
-| History | Delay rate over [D − 29, D − 1 00:00) per service × hour and per line_id / route group; later: train number with fallback → line_id / route group → service when a cell is sparse | A, B |
-| Propagation | Delay at the previous stop and two stops before (departure delay, else arrival delay); planned minutes from that stop to Würzburg; stops between (from `train_line_station_num`) | B only |
+| Timetable | `service`, `line_id`, `destination` (route group of long-distance trains), `planned_hour`, `weekday`, `is_through`, `stop_position`, `dwell_min` | A, B |
+| Calendar | `is_public_holiday`, `is_school_holiday`, `is_bridge_day` (Friday and Sunday evening peaks are left to weekday × hour) | A, B |
+| Weather | `temperature_c`, `precipitation_mm`, `wind_speed_kmh`, `wind_gust_kmh`, `snowfall_cm`, `snow_depth_m` (observed weather stands in for a forecast) | A, B |
+| History | `hist_rate_service_hour`, `hist_rate_route`, `hist_n_route`, `hist_rate_all` over [D − 29, D − 1 00:00); later: train number with fallback → line_id / route group → service when a cell is sparse | A, B |
+| Propagation | `prev_delay`, `prev_delay_2` (departure delay, else arrival delay, at the last two usable earlier stops), `prev_minutes_to_departure`, `prev_stops_between` (from `train_line_station_num`) | B only |
 
 ## Leakage rules
 
@@ -134,7 +135,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 **Safeguards**
 
 1. **Feature whitelist and forbidden list** (`src/features_config.py`): models use only whitelisted columns; `FORBIDDEN_COLUMNS` holds change times, delays, target, cancellation flags, ids, `time`, `train_number`, disruption flags, `source_month`, `row_role`.
-2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features (name check only; passes trivially while the lists are empty); no propagation features in A (`prev_` prefix); splits chronological and disjoint; same test period; B starts at full coverage (literal date and data check); DST days; filter SQL on a small fixture (12-hour window, midnight, ride id on two days); local row counts equal `monthly_summary.csv`; every raw column is classified as allowed or forbidden; metrics, day-block bootstrap and baselines on made-up data; the training script refuses the test split; cleaning rules on a small fixture and on the real output (ids unique, no bus/DST/cancelled/invalid rows among modelling rows, stable `line_id`, no test-period delay rate in the count files). **To add:** with `04` — time-travel test (history for day D identical when data is truncated at D − 1 00:00), every earlier stop planned before the Würzburg arrival, no row in two splits, identical test rows for M-A′/M-B (through-train subset); with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
+2. **Automated tests** (`pytest`, before every training run) — exist: no forbidden column in features (name check only; passes trivially while the lists are empty); no propagation features in A (`prev_` prefix); splits chronological and disjoint; same test period; B starts at full coverage (literal date and data check); DST days; filter SQL on a small fixture (12-hour window, midnight, ride id on two days); local row counts equal `monthly_summary.csv`; every raw column is classified as allowed or forbidden; metrics, day-block bootstrap and baselines on made-up data; the training script refuses the test split; cleaning rules on a small fixture and on the real output (ids unique, no bus/DST/cancelled/invalid rows among modelling rows, stable `line_id`, no test-period delay rate in the count files). feature step (`tests/test_features.py`): history window by hand, time-travel test on made-up data and on three real days (labels from D − 1 on do not change the features of day D), previous stop = last usable stop and before the Würzburg arrival, tables contain exactly the whitelisted columns, no row in two splits, identical scenario A values on scenario B rows, no single scenario A feature at ROC-AUC 0.9 or more on validation. **To add:** with `05` — encoders/categories from training data only; columns given to each model equal `FEATURES[scenario]`; the test run is one command that writes `reports/results.md` and refuses to run a second time.
 3. **Sanity checks on results:** each single feature clearly below ROC-AUC 0.9; shuffled target → ROC-AUC ≈ 0.5; validation and test in the same range; SHAP top features make domain sense (not IDs or timestamps).
 4. **Second pair of eyes:** a second member reviews feature and split code; an AI review ("Check this code for data leakage against the leakage rules in CLAUDE.md") is extra, not a replacement.
 
@@ -177,8 +178,8 @@ pds-db-delays/
 ├── checks/                          # coverage_check.py, category_check.py, data_quality_check.py
 ├── reference/school_holidays_bavaria.csv (tracked, with source)
 ├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md, docs/proposal_draft.md
-├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py, 04_features.py*, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
-├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py, test_enrich.py
+├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py, 04_features.py, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
+├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py, test_enrich.py, test_features.py
 ├── notebooks/01_eda.ipynb, app/streamlit_app.py*, models/
 └── reports/{figures,checks}/, reports/results_validation.md, reports/results.md*
 ```
@@ -223,7 +224,7 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (11 Nov 2026).** Steps 1 (download, filter), 2 (cleaning) and 3 (weather and calendar tables) are done, as are the evaluation code, the baselines B0–B2 on validation, the EDA notebook and the proposal draft. `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 with timetable and calendar columns PR-AUC 0.535, ROC-AUC 0.800; B2 − B1 = +0.022 PR-AUC, interval above zero. The training script never loads test-period rows. Branches `02-clean` … `05-proposal` are merged into `main`; step 3 is on branch `06-enrich` (to merge). Tests: 75 passed. **Next action:** `04_features` (scenario A and B tables, simple history first, propagation features) with its leakage tests, then B3.
+**Current status (11 Nov 2026).** Pipeline steps 1–4 are done (download and filter, cleaning, weather and calendar, feature tables), together with the evaluation code, all four baselines on validation, the EDA notebook and the proposal draft; `python run_pipeline.py` runs everything from the raw files to `reports/results_validation.md`. Validation results (1,000 day resamples): scenario A, all departures: B1 PR-AUC 0.513, B2 0.535 (ROC-AUC 0.785, 0.800). Scenario B rows (8,020 through trains): B1 0.549, B2 0.564, **B3 (previous-stop delay) PR-AUC 0.877, ROC-AUC 0.909, F1 0.806**. These are the bars for M-A (beat B2) and M-B (beat B3). The training script never loads test-period rows. Tests: 96 passed. Steps 3 and 4 are on branches `06-enrich` and `07-features` (to merge; `07-features` brings both). **Next action:** LightGBM M-A, M-A′ and M-B in `05_train.py` (tuning with at most 20 settings on validation), sanity checks, then the single final test run.
 
 **Now (week 2, until 17 Nov)** — in this order
 
@@ -238,4 +239,4 @@ pds-db-delays/
 - [x] Draft the two-page proposal — 10 Nov, `docs/proposal_draft.md` (names and matriculation numbers still to fill in; question about the GenAI documentation is attached); branch `05-proposal` to merge
 - [ ] Collect 6–10 related-work references on train delay prediction
 
-**Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` — done 11 Nov; `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.
+**Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` — done 11 Nov; `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3 — all done 11 Nov; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.

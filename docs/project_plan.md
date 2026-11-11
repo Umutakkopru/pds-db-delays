@@ -4,7 +4,7 @@
 
 Last updated: 10 Nov 2026 · PDS Group 18
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D23, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D24, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## 1. Assignment brief: key facts
 
@@ -160,9 +160,9 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 
 - [ ] Submit the proposal around 20 Nov 2026 (official deadline 30 Nov); ask about the GenAI documentation in the same message
 - [x] `03_enrich`: weather (downloaded once in UTC, stored in `data/raw/weather/`), public holidays, Bavarian school holidays, bridge days (11 Nov; D23)
-- [ ] `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
-- [ ] Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
-- [ ] Baseline B3 (persistence rule) on validation (D17)
+- [x] (11 Nov) `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
+- [x] (11 Nov) Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
+- [x] Baseline B3 (persistence rule) on validation (D17): PR-AUC 0.877, F1 0.806 on the scenario B validation rows (11 Nov)
 - [ ] Write the Data section draft (EDA figures exist; propagation, exactly-on-time trend and B horizon are already in the notebook)
 - [ ] Deploy an empty test app on Streamlit Community Cloud (checks Python and LightGBM versions early)
 - **Result of the week:** feature tables with passing leakage tests, B3 score, Data section draft

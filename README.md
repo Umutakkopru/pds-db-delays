@@ -33,7 +33,10 @@ python src/02_clean.py
 # 4. Weather (one download from Open-Meteo, about 1 MB) and holiday tables
 python src/03_enrich.py
 
-# 5. Baselines B0-B2 on the validation split (the test period is not touched)
+# 5. Feature tables for scenario A and B
+python src/04_features.py
+
+# 6. Baselines B0-B3 on the validation splits (the test period is not touched)
 python src/05_train.py
 
 # Whole pipeline (steps that exist so far)
@@ -53,7 +56,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05` (steps `01`, `02`, `03` and the baseline part of `05` exist; `04` is planned), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`05` (steps `01`–`04` and the baseline part of `05` exist; LightGBM and the final test run are planned), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
 | `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
