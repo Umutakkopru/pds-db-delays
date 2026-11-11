@@ -201,8 +201,25 @@ def failure_type(row: pd.Series) -> str:
     and for scenario B prev_delay and prev_minutes_to_departure (missing for
     scenario A rows).
     """
-    # TODO(human): return a short label for the failure type of this row.
-    return "unclassified"
+    threshold = config.DELAY_THRESHOLD_MIN
+    delay = row["dep_delay"]
+    prev_delay = row.get("prev_delay")
+    has_prev = prev_delay is not None and pd.notna(prev_delay)
+
+    if row["delayed"] == 1:                                   # missed delay: low probability, train was late
+        if delay <= threshold + 2:
+            return f"missed, just over the threshold ({threshold}-{threshold + 2} min)"
+        if has_prev and prev_delay < threshold:
+            return "missed, delay arose after an on-time previous stop"
+        if delay >= 30:
+            return "missed, major delay (30+ min)"
+        return f"missed, moderate delay ({threshold + 3}-29 min) on a usually punctual train"
+
+    if delay >= threshold - 2:                                # false alarm: high probability, train was on time
+        return f"false alarm, just under the threshold ({threshold - 2}-{threshold - 1} min)"
+    if has_prev and prev_delay >= threshold:
+        return "false alarm, train made up its delay before Würzburg"
+    return "false alarm, other"
 
 
 def largest_errors(df: pd.DataFrame, model: str, extra: list[str]) -> pd.DataFrame:

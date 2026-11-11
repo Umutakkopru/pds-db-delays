@@ -79,10 +79,24 @@ def test_rule_against_model_by_hand():
     assert table.loc["20+ min", "accuracy_rule"] == 1 and table.loc["20+ min", "errors_model"] == 0
 
 
-def test_failure_type_returns_a_label_for_both_scenarios():
-    row_a = pd.Series({"delayed": 1, "score": 0.03, "dep_delay": 25.0, "service": "regional", "planned_hour": 8})
-    row_b = pd.Series({"delayed": 0, "score": 0.98, "dep_delay": 3.0, "service": "long_distance", "planned_hour": 14,
-                       "prev_delay": 30.0, "prev_minutes_to_departure": 110.0})
-    for row in (row_a, row_b):
-        label = ea.failure_type(row)
-        assert isinstance(label, str) and label.strip()
+def _error_row(delayed, dep_delay, prev_delay=None):
+    row = {"delayed": delayed, "score": 0.03 if delayed else 0.97, "dep_delay": dep_delay,
+           "service": "regional", "planned_hour": 8}
+    if prev_delay is not None:
+        row.update({"prev_delay": prev_delay, "prev_minutes_to_departure": 20.0})
+    return pd.Series(row)
+
+
+@pytest.mark.parametrize("row, expected", [
+    (_error_row(1, 6.0), "missed, just over the threshold"),
+    (_error_row(1, 8.0, prev_delay=0.0), "missed, just over the threshold"),        # closeness to the threshold comes first
+    (_error_row(1, 24.0, prev_delay=1.0), "missed, delay arose after an on-time previous stop"),
+    (_error_row(1, 62.0), "missed, major delay"),                                    # scenario A row: no previous stop
+    (_error_row(1, 14.0), "missed, moderate delay"),
+    (_error_row(1, 14.0, prev_delay=float("nan")), "missed, moderate delay"),        # missing previous stop = scenario A
+    (_error_row(0, 4.0, prev_delay=31.0), "false alarm, just under the threshold"),
+    (_error_row(0, 0.0, prev_delay=22.0), "false alarm, train made up its delay"),
+    (_error_row(0, 1.0), "false alarm, other"),
+])
+def test_failure_types(row, expected):
+    assert ea.failure_type(row).startswith(expected)

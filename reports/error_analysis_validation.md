@@ -174,56 +174,61 @@ Rows where the predicted probability is furthest from what happened. `score` is 
 
 | planned | train | destination | delayed | dep_delay | score | hist_rate_route | failure_type |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-04-25 10:35 | RE 4785 | Nürnberg Hbf | 1 | 6.000 | 0.026 | 0.050 | unclassified |
-| 2026-06-23 06:35 | RE 4781 | Nürnberg Hbf | 1 | 10.000 | 0.026 | 0.033 | unclassified |
-| 2026-04-16 06:35 | RE 4781 | Nürnberg Hbf | 1 | 13.000 | 0.027 | 0.029 | unclassified |
-| 2026-04-26 14:35 | RE 4789 | Nürnberg Hbf | 1 | 7.000 | 0.027 | 0.050 | unclassified |
-| 2026-03-07 14:35 | RE 4789 | Nürnberg Hbf | 1 | 6.000 | 0.027 | 0.028 | unclassified |
-| 2026-06-12 06:35 | RE 4781 | Nürnberg Hbf | 1 | 14.000 | 0.028 | 0.017 | unclassified |
-| 2026-03-04 12:35 | RE 4787 | Nürnberg Hbf | 1 | 7.000 | 0.030 | 0.028 | unclassified |
-| 2026-02-19 14:35 | RE 4789 | Nürnberg Hbf | 1 | 6.000 | 0.030 | 0.041 | unclassified |
-| 2026-05-07 08:35 | RE 4783 | Nürnberg Hbf | 1 | 8.000 | 0.030 | 0.057 | unclassified |
-| 2026-01-04 08:06 | RB 57957 | Lauda | 1 | 6.000 | 0.031 | 0.040 | unclassified |
-| 2026-05-08 12:35 | RE 4787 | Nürnberg Hbf | 1 | 28.000 | 0.031 | 0.057 | unclassified |
-| 2026-01-26 08:35 | RE 4783 | Nürnberg Hbf | 1 | 7.000 | 0.031 | 0.013 | unclassified |
-| 2026-04-16 08:35 | RE 4783 | Nürnberg Hbf | 1 | 6.000 | 0.031 | 0.029 | unclassified |
-| 2026-06-18 10:35 | RE 4785 | Nürnberg Hbf | 1 | 9.000 | 0.031 | 0.025 | unclassified |
-| 2026-06-13 14:35 | RE 4789 | Nürnberg Hbf | 1 | 62.000 | 0.031 | 0.017 | unclassified |
-| 2026-04-21 10:35 | RE 4785 | Nürnberg Hbf | 1 | 6.000 | 0.031 | 0.050 | unclassified |
-| 2026-01-15 14:35 | RE 4789 | Nürnberg Hbf | 1 | 6.000 | 0.031 | 0.004 | unclassified |
-| 2026-04-15 12:35 | RE 4787 | Nürnberg Hbf | 1 | 9.000 | 0.032 | 0.029 | unclassified |
-| 2026-03-12 16:35 | RE 4791 | Nürnberg Hbf | 1 | 8.000 | 0.032 | 0.028 | unclassified |
-| 2026-01-03 12:37 | RE 4616 | Frankfurt(Main)Hbf | 1 | 11.000 | 0.032 | 0.046 | unclassified |
+| 2026-04-25 10:35 | RE 4785 | Nürnberg Hbf | 1 | 6.000 | 0.026 | 0.050 | missed, just over the threshold (6-8 min) |
+| 2026-06-23 06:35 | RE 4781 | Nürnberg Hbf | 1 | 10.000 | 0.026 | 0.033 | missed, moderate delay (9-29 min) on a usually punctual train |
+| 2026-04-16 06:35 | RE 4781 | Nürnberg Hbf | 1 | 13.000 | 0.027 | 0.029 | missed, moderate delay (9-29 min) on a usually punctual train |
+| 2026-04-26 14:35 | RE 4789 | Nürnberg Hbf | 1 | 7.000 | 0.027 | 0.050 | missed, just over the threshold (6-8 min) |
+| 2026-03-07 14:35 | RE 4789 | Nürnberg Hbf | 1 | 6.000 | 0.027 | 0.028 | missed, just over the threshold (6-8 min) |
+| 2026-06-12 06:35 | RE 4781 | Nürnberg Hbf | 1 | 14.000 | 0.028 | 0.017 | missed, moderate delay (9-29 min) on a usually punctual train |
+| 2026-03-04 12:35 | RE 4787 | Nürnberg Hbf | 1 | 7.000 | 0.030 | 0.028 | missed, just over the threshold (6-8 min) |
+| 2026-02-19 14:35 | RE 4789 | Nürnberg Hbf | 1 | 6.000 | 0.030 | 0.041 | missed, just over the threshold (6-8 min) |
+| 2026-05-07 08:35 | RE 4783 | Nürnberg Hbf | 1 | 8.000 | 0.030 | 0.057 | missed, just over the threshold (6-8 min) |
+| 2026-01-04 08:06 | RB 57957 | Lauda | 1 | 6.000 | 0.031 | 0.040 | missed, just over the threshold (6-8 min) |
+| 2026-05-08 12:35 | RE 4787 | Nürnberg Hbf | 1 | 28.000 | 0.031 | 0.057 | missed, moderate delay (9-29 min) on a usually punctual train |
+| 2026-01-26 08:35 | RE 4783 | Nürnberg Hbf | 1 | 7.000 | 0.031 | 0.013 | missed, just over the threshold (6-8 min) |
+| 2026-04-16 08:35 | RE 4783 | Nürnberg Hbf | 1 | 6.000 | 0.031 | 0.029 | missed, just over the threshold (6-8 min) |
+| 2026-06-18 10:35 | RE 4785 | Nürnberg Hbf | 1 | 9.000 | 0.031 | 0.025 | missed, moderate delay (9-29 min) on a usually punctual train |
+| 2026-06-13 14:35 | RE 4789 | Nürnberg Hbf | 1 | 62.000 | 0.031 | 0.017 | missed, major delay (30+ min) |
+| 2026-04-21 10:35 | RE 4785 | Nürnberg Hbf | 1 | 6.000 | 0.031 | 0.050 | missed, just over the threshold (6-8 min) |
+| 2026-01-15 14:35 | RE 4789 | Nürnberg Hbf | 1 | 6.000 | 0.031 | 0.004 | missed, just over the threshold (6-8 min) |
+| 2026-04-15 12:35 | RE 4787 | Nürnberg Hbf | 1 | 9.000 | 0.032 | 0.029 | missed, moderate delay (9-29 min) on a usually punctual train |
+| 2026-03-12 16:35 | RE 4791 | Nürnberg Hbf | 1 | 8.000 | 0.032 | 0.028 | missed, just over the threshold (6-8 min) |
+| 2026-01-03 12:37 | RE 4616 | Frankfurt(Main)Hbf | 1 | 11.000 | 0.032 | 0.046 | missed, moderate delay (9-29 min) on a usually punctual train |
 
 | failure type | rows |
 | --- | --- |
-| unclassified | 20 |
+| missed, just over the threshold (6-8 min) | 12 |
+| missed, moderate delay (9-29 min) on a usually punctual train | 7 |
+| missed, major delay (30+ min) | 1 |
 
 **M-B**
 
 | planned | train | destination | delayed | dep_delay | score | prev_delay | prev_minutes_to_departure | failure_type |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 2026-05-25 02:36 | NJ 40420 | Hamburg-Altona | 0 | 4.000 | 0.995 | 31.000 | 54.000 | unclassified |
-| 2026-06-29 14:07 | ICE 1650 | Frankfurt(Main)Hbf | 0 | 0.000 | 0.991 | 22.000 | 110.000 | unclassified |
-| 2026-06-28 11:01 | RB 58024 | Flieden | 1 | 24.000 | 0.013 | 1.000 | 16.000 | unclassified |
-| 2026-06-12 10:08 | RB 58025 | Bamberg | 1 | 8.000 | 0.019 | 0.000 | 15.000 | unclassified |
-| 2026-05-30 13:42 | ICE 1225 | Wien Hbf | 0 | 2.000 | 0.981 | 30.000 | 120.000 | unclassified |
-| 2026-06-28 16:07 | ICE 1568 | Frankfurt(Main)Hbf | 0 | 4.000 | 0.980 | 18.000 | 108.000 | unclassified |
-| 2026-06-28 19:38 | RE 4625 | Bamberg | 1 | 14.000 | 0.020 | 2.000 | 33.000 | unclassified |
-| 2026-05-08 04:26 | ICE 1081 | München Hbf | 0 | 3.000 | 0.977 | 34.000 | 127.000 | unclassified |
-| 2026-05-11 17:38 | RE 4621 | Bamberg | 1 | 6.000 | 0.024 | 0.000 | 33.000 | unclassified |
-| 2026-06-30 18:01 | RB 58060 | Flieden | 1 | 6.000 | 0.025 | 0.000 | 16.000 | unclassified |
-| 2026-06-14 11:28 | ICE 682 | Hamburg Hbf | 1 | 7.000 | 0.026 | 0.000 | 58.000 | unclassified |
-| 2026-05-23 15:08 | RB 58049 | Bamberg | 1 | 7.000 | 0.027 | 0.000 | 15.000 | unclassified |
-| 2026-06-11 13:01 | RB 58032 | Flieden | 1 | 6.000 | 0.027 | 0.000 | 16.000 | unclassified |
-| 2026-05-13 11:07 | RB 58027 | Bamberg | 1 | 13.000 | 0.027 | 0.000 | 14.000 | unclassified |
-| 2026-05-09 19:08 | RB 58069 | Bamberg | 1 | 34.000 | 0.030 | 0.000 | 14.000 | unclassified |
-| 2026-06-05 17:08 | RB 58057 | Bamberg | 1 | 15.000 | 0.030 | 0.000 | 15.000 | unclassified |
-| 2026-05-13 20:08 | RB 58071 | Bamberg | 1 | 7.000 | 0.032 | 0.000 | 15.000 | unclassified |
-| 2026-05-05 13:01 | RB 58032 | Flieden | 1 | 6.000 | 0.034 | 0.000 | 16.000 | unclassified |
-| 2026-06-20 18:37 | RE 4628 | Frankfurt(Main)Hbf | 1 | 6.000 | 0.034 | 2.000 | 41.000 | unclassified |
-| 2026-06-19 19:01 | RB 58068 | Flieden | 1 | 13.000 | 0.035 | 2.000 | 17.000 | unclassified |
+| 2026-05-25 02:36 | NJ 40420 | Hamburg-Altona | 0 | 4.000 | 0.995 | 31.000 | 54.000 | false alarm, just under the threshold (4-5 min) |
+| 2026-06-29 14:07 | ICE 1650 | Frankfurt(Main)Hbf | 0 | 0.000 | 0.991 | 22.000 | 110.000 | false alarm, train made up its delay before Würzburg |
+| 2026-06-28 11:01 | RB 58024 | Flieden | 1 | 24.000 | 0.013 | 1.000 | 16.000 | missed, delay arose after an on-time previous stop |
+| 2026-06-12 10:08 | RB 58025 | Bamberg | 1 | 8.000 | 0.019 | 0.000 | 15.000 | missed, just over the threshold (6-8 min) |
+| 2026-05-30 13:42 | ICE 1225 | Wien Hbf | 0 | 2.000 | 0.981 | 30.000 | 120.000 | false alarm, train made up its delay before Würzburg |
+| 2026-06-28 16:07 | ICE 1568 | Frankfurt(Main)Hbf | 0 | 4.000 | 0.980 | 18.000 | 108.000 | false alarm, just under the threshold (4-5 min) |
+| 2026-06-28 19:38 | RE 4625 | Bamberg | 1 | 14.000 | 0.020 | 2.000 | 33.000 | missed, delay arose after an on-time previous stop |
+| 2026-05-08 04:26 | ICE 1081 | München Hbf | 0 | 3.000 | 0.977 | 34.000 | 127.000 | false alarm, train made up its delay before Würzburg |
+| 2026-05-11 17:38 | RE 4621 | Bamberg | 1 | 6.000 | 0.024 | 0.000 | 33.000 | missed, just over the threshold (6-8 min) |
+| 2026-06-30 18:01 | RB 58060 | Flieden | 1 | 6.000 | 0.025 | 0.000 | 16.000 | missed, just over the threshold (6-8 min) |
+| 2026-06-14 11:28 | ICE 682 | Hamburg Hbf | 1 | 7.000 | 0.026 | 0.000 | 58.000 | missed, just over the threshold (6-8 min) |
+| 2026-05-23 15:08 | RB 58049 | Bamberg | 1 | 7.000 | 0.027 | 0.000 | 15.000 | missed, just over the threshold (6-8 min) |
+| 2026-06-11 13:01 | RB 58032 | Flieden | 1 | 6.000 | 0.027 | 0.000 | 16.000 | missed, just over the threshold (6-8 min) |
+| 2026-05-13 11:07 | RB 58027 | Bamberg | 1 | 13.000 | 0.027 | 0.000 | 14.000 | missed, delay arose after an on-time previous stop |
+| 2026-05-09 19:08 | RB 58069 | Bamberg | 1 | 34.000 | 0.030 | 0.000 | 14.000 | missed, delay arose after an on-time previous stop |
+| 2026-06-05 17:08 | RB 58057 | Bamberg | 1 | 15.000 | 0.030 | 0.000 | 15.000 | missed, delay arose after an on-time previous stop |
+| 2026-05-13 20:08 | RB 58071 | Bamberg | 1 | 7.000 | 0.032 | 0.000 | 15.000 | missed, just over the threshold (6-8 min) |
+| 2026-05-05 13:01 | RB 58032 | Flieden | 1 | 6.000 | 0.034 | 0.000 | 16.000 | missed, just over the threshold (6-8 min) |
+| 2026-06-20 18:37 | RE 4628 | Frankfurt(Main)Hbf | 1 | 6.000 | 0.034 | 2.000 | 41.000 | missed, just over the threshold (6-8 min) |
+| 2026-06-19 19:01 | RB 58068 | Flieden | 1 | 13.000 | 0.035 | 2.000 | 17.000 | missed, delay arose after an on-time previous stop |
 
 | failure type | rows |
 | --- | --- |
-| unclassified | 20 |
+| missed, just over the threshold (6-8 min) | 9 |
+| missed, delay arose after an on-time previous stop | 6 |
+| false alarm, train made up its delay before Würzburg | 3 |
+| false alarm, just under the threshold (4-5 min) | 2 |

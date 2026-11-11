@@ -531,6 +531,7 @@ Not a decision; recorded here because the Results and Discussion sections are wr
 - **Scenario B, rule against model.** The 6-minute rule B3 is right in 37.4% of the cases when the train was 6–9 minutes late at the previous stop; M-B in 72.7% (454 against 198 wrong predictions among 725 departures). For 10–19 minutes: 80.1% against 90.0%. Below 6 minutes the two are equal. The whole gain of M-B over B3 comes from trains that are moderately late at the previous stop.
 - **Scenario B by service.** PR-AUC M-A′ / B3 / M-B: long-distance 0.650 / 0.922 / 0.940; regional 0.151 / 0.670 / 0.764; night 0.868 / 0.901 / 0.947. The en-route information helps regional trains most in relative terms.
 - **Calibration.** Expected calibration error 0.017 (M-A) and 0.016 (M-B) without any calibration step; M-A is slightly too low between 40% and 60%, M-B slightly too high between 50% and 70%.
+- **The 20 largest errors per model, by failure type.** M-A: all 20 are missed delays of regional trains with a history rate of a few percent (19 of them the two-hourly RE to Nürnberg); 12 were only 6–8 minutes late, 7 were 9–29 minutes late, 1 was 62 minutes late. The day before, nothing distinguishes these departures from the punctual ones of the same train. M-B: 9 missed delays just over the threshold; 6 missed delays that arose after an on-time previous stop (regional trains, previous stop 14–33 minutes before the departure); 3 false alarms where a train 18–34 minutes late at a stop about two hours away made up its delay; 2 false alarms that ended 4–5 minutes late. About half of the worst errors of both models sit within two minutes of the 6-minute threshold, which is a property of a binary target, not of the models.
 - **Confusion matrices (validation thresholds).** M-A: 6,734 hits, 3,382 missed delays, 5,929 false alarms. M-B: 2,291 hits, 512 missed, 275 false alarms. B3: 2,352 hits, 451 missed, 682 false alarms.
 
 ---
@@ -549,7 +550,7 @@ Not a decision; recorded here because the Results and Discussion sections are wr
 | Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
 | Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py` | 112 passing (11 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py` | 120 passing (11 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources
