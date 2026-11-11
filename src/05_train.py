@@ -7,6 +7,7 @@ scenario B baseline B3 and the single final test run are added when the feature
 tables of step 04 exist. Until then this script never loads test-period rows.
 
 Reads:  data/processed/wuerzburg_clean.parquet            (step 2; modelling rows of train and validation)
+        data/processed/calendar_daily.parquet             (step 3; holidays)
 Writes: reports/results_validation.md                     (validation scores with 95% intervals)
 
 Usage: python src/05_train.py
@@ -22,6 +23,7 @@ import config
 import evaluate
 
 CLEAN_FILE = config.DATA_PROCESSED / "wuerzburg_clean.parquet"
+CALENDAR_FILE = config.DATA_PROCESSED / "calendar_daily.parquet"
 RESULTS_VALIDATION = config.REPORTS / "results_validation.md"
 DEVELOPMENT_SPLITS = ("train", "val")  # the test split is loaded only by the final run
 
@@ -33,11 +35,16 @@ def load_modelling_rows(scenario: str = "A", splits: tuple[str, ...] = DEVELOPME
     column = {"A": "split_a", "B": "split_b"}[scenario]
     wanted = ", ".join(f"'{s}'" for s in splits)
     f = str(CLEAN_FILE).replace("'", "''")
+    c = str(CALENDAR_FILE).replace("'", "''")
     df = duckdb.sql(f"""
-        SELECT *, {column} AS split
-        FROM read_parquet('{f}')
-        WHERE exclude_reason IS NULL AND {column} IN ({wanted})
+        SELECT w.*, w.{column} AS split,
+               cal.is_public_holiday, cal.is_school_holiday, cal.is_bridge_day
+        FROM read_parquet('{f}') w
+        LEFT JOIN read_parquet('{c}') cal ON cal.service_date = w.service_date
+        WHERE w.exclude_reason IS NULL AND w.{column} IN ({wanted})
     """).df()
+    if df["is_public_holiday"].isna().any():
+        raise ValueError("Departures without a calendar row: run src/03_enrich.py for the whole data period.")
     return baselines.add_timetable_columns(df)
 
 
@@ -120,9 +127,9 @@ def main() -> None:
         f"{100 * y.mean():.1f}% delayed). Intervals: {args.resamples} bootstrap resamples of whole days. "
         "The threshold maximises F1 on validation (B0 has a constant score and keeps 0.5). "
         "The test period is not used.\n\n"
-        "B2 uses only timetable columns so far ("
+        "B2 uses timetable and calendar columns ("
         + ", ".join(f"`{c}`" for c in baselines.features_config.BASELINE_FEATURES)
-        + "); holidays follow with step 03.\n"
+        + ").\n"
     )
     text = header + "\n" + to_markdown(table) + "\n\n## Paired differences (same day resamples)\n\n" + to_markdown(differences) + "\n"
     RESULTS_VALIDATION.write_text(text, encoding="utf-8")

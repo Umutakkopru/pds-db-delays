@@ -14,12 +14,29 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_RAW = ROOT / "data" / "raw"
 DATA_INTERIM = ROOT / "data" / "interim"
 DATA_PROCESSED = ROOT / "data" / "processed"
+REFERENCE = ROOT / "reference"   # small tracked tables (school holidays)
 SQL_DIR = ROOT / "src" / "sql"
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 CHECKS = REPORTS / "checks"
 
 STATION = "Würzburg Hbf"
+
+# Step 03 (enrichment). Weather is requested for the station's location in UTC
+# and converted to local time by us: with timezone=Europe/Berlin the Open-Meteo
+# archive applies a fixed +1 h offset all year, which is one hour off in summer.
+STATION_LATITUDE = 49.8018
+STATION_LONGITUDE = 9.9358
+WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
+WEATHER_VARIABLES = {            # Open-Meteo name -> our column name
+    "temperature_2m": "temperature_c",
+    "precipitation": "precipitation_mm",
+    "wind_speed_10m": "wind_speed_kmh",
+    "wind_gusts_10m": "wind_gust_kmh",
+    "snowfall": "snowfall_cm",
+    "snow_depth": "snow_depth_m",
+}
+HOLIDAY_SUBDIVISION = "BY"       # Bavaria; Würzburg also observes Mariä Himmelfahrt (15 Aug)
 
 # All timestamps in the archive are naive German local time (Europe/Berlin).
 # We keep them as local time; weather is joined on local time as well.

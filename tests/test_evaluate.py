@@ -162,11 +162,16 @@ def test_logistic_baseline_handles_unseen_categories_and_missing_lines():
         "planned_hour": rng.integers(5, 23, n),
         "weekday": rng.integers(0, 7, n),
         "is_through": rng.choice([True, False], n),
+        "is_public_holiday": rng.random(n) < 0.05,
+        "is_school_holiday": rng.random(n) < 0.25,
+        "is_bridge_day": rng.random(n) < 0.02,
     })
     train["delayed"] = ((train["service"] == "long_distance") & (rng.random(n) < 0.7)).astype(int)
     model = baselines.make_logistic_baseline().fit(baselines.logistic_frame(train), train["delayed"])
     new = pd.DataFrame({"service": ["long_distance", "regional", "brand_new"], "line_id": [None, "RE99", None],
-                        "planned_hour": [8, 8, 3], "weekday": [0, 0, 0], "is_through": [True, False, True]})
+                        "planned_hour": [8, 8, 3], "weekday": [0, 0, 0], "is_through": [True, False, True],
+                        "is_public_holiday": [False, True, False], "is_school_holiday": [False, False, True],
+                        "is_bridge_day": [False, False, False]})
     p = model.predict_proba(baselines.logistic_frame(new))[:, 1]
     assert p.shape == (3,) and np.all((p >= 0) & (p <= 1))
     assert p[0] > p[1]

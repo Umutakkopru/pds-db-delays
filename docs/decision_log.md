@@ -6,7 +6,7 @@ Purpose: a chronological record of every data and method decision, with the ques
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Who decided: D1–D22 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+Who decided: D1–D23 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
 
 Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; independent audit on 10 Nov, its recommendations recorded as D17–D22; cleaning step next).
 
@@ -38,6 +38,7 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D20 | Through trains | `is_through` = planned arrival present; `has_prev_stop` separate; scenario B rows need both | 72 test departures arrive without an earlier stop in the data | 4 |
 | D21 | Evaluation details | Tree count and threshold kept in the refit; tuning at most 20 settings; weather ablation on validation | Refit data is 30–34% larger; weather is observed, not forecast | 4, 6 |
 | D22 | Order and scope of the remaining steps | Baselines before enrichment; simple history features first; Bavarian school holidays first; minimum version frozen 1 Dec, extensions 8 Dec | One working track must reach a full results table early | – |
+| D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -258,6 +259,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 **Decision.**
 - All features and split boundaries use naive local time; nothing is converted to UTC (`TIMEZONE` in `src/config.py`).
 - Weather from Open-Meteo with `timezone=Europe/Berlin`, joined on the local hour of the planned departure; the doubled October hour is averaged.
+  - *Correction (11 Nov 2026, step 03):* with `timezone=Europe/Berlin` the Open-Meteo archive applies a fixed offset of +1 hour all year (checked for 1 July 2026: `utc_offset_seconds = 3600`), so its "local" times are one hour off during summer time. The weather is therefore downloaded in UTC and converted to Europe/Berlin local time in `src/03_enrich.py`; the rest of the rule is unchanged (see D23).
 - On DST-change days a difference between two naive local times can be off by 60 minutes. Departures planned between 00:00 and 05:00 local time on the five DST days in the data period (27 Oct 2024, 30 Mar 2025, 26 Oct 2025, 29 Mar 2026, 25 Oct 2026) are excluded and counted. The days are computed by `config.dst_change_days()` and tested in `tests/test_config.py`.
 
 **Report.** Data (preprocessing), one sentence.
@@ -452,6 +454,25 @@ These rows exist only because DB's change feed reported something for them; in 2
 
 **Report.** –
 
+## D23 Enrichment: weather and calendar (11 Nov 2026; proposal)
+
+**Question.** Which weather and calendar information is added, from where, and how is it aligned with the departures?
+
+**Decision.**
+- **Weather:** hourly values at the station's location (49.80° N, 9.94° E) from the Open-Meteo archive (reanalysis; CC BY 4.0): temperature, precipitation, wind speed, wind gusts, snowfall, snow depth. Downloaded once in UTC and stored as raw JSON under `data/raw/weather/`; converted to naive local time; the hour that occurs twice when clocks go back is averaged, the hour that does not exist when clocks go forward has no row (D10, corrected). One location only: weather along the route is not used.
+- **Public holidays:** Bavaria from the `holidays` package (version in `requirements-lock.txt`), categories public and catholic, so that Mariä Himmelfahrt (15 August) counts, which Würzburg observes.
+- **School holidays:** Bavaria only (D22), from the official announcement BayMBl. 2022 Nr. 747, stored in `reference/school_holidays_bavaria.csv` with its source; the school-free Buß- und Bettag is added by its rule.
+- **Bridge days:** a working Friday after a public holiday on Thursday, or a working Monday before one on Tuesday.
+- The two tables (`weather_hourly.parquet`, `calendar_daily.parquet`) are joined to the departures in step 04, on the local hour and the service date. Observed weather stands in for a forecast in scenario A (limitation; weather ablation in D21).
+
+**Result** (`reports/checks/enrichment_summary.csv`). 853 days, 28 public holidays, 226 school holiday days, 10 bridge days; 20,470 local hours of weather, no missing values, 2 local hours without a row (the clock changes of March 2025 and March 2026); temperature −10.2 to 37.7 °C; 2,965 hours with precipitation, 232 with snowfall. Every modelling departure gets a weather and a calendar row (test).
+
+**Effect on the baseline.** With the three calendar flags, B2 reaches PR-AUC 0.535 and ROC-AUC 0.800 on validation (before: 0.528 and 0.797); B2 − B1 = +0.022 PR-AUC [+0.014, +0.030].
+
+**Alternatives considered.** Weather of the German Weather Service station Würzburg (more exact, more work to parse); neighbouring states' school holidays (if time allows).
+
+**Report.** Data (additional sources), Methodology (features).
+
 ---
 
 ## Pipeline and checks so far
@@ -463,9 +484,10 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
+| Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
 | Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0, B1, B2 on the A validation split, 1,000 day resamples) |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
-| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py`, `tests/test_clean.py`, `tests/test_evaluate.py` | 63 passing (10 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py` | 75 passing (11 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

@@ -75,9 +75,12 @@ ALLOWED_DERIVED_INPUTS = {"service", "line_id", "is_through"}
 # scenario A.
 PROPAGATION_PREFIX = "prev_"
 
-# Columns of the logistic-regression baseline B2 (timetable only, all known the
-# day before). Holidays are added after step 03, the route group after step 04.
-BASELINE_FEATURES = ["service", "line_id", "planned_hour", "weekday", "is_through"]
+# Columns of the logistic-regression baseline B2: timetable and calendar, all
+# known the day before. The route group follows with step 04.
+BASELINE_FEATURES = [
+    "service", "line_id", "planned_hour", "weekday", "is_through",
+    "is_public_holiday", "is_school_holiday", "is_bridge_day",
+]
 
 # Allowed feature columns per scenario (filled in week 3).
 FEATURES: dict[str, list[str]] = {

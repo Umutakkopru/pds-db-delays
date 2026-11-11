@@ -1,10 +1,10 @@
 # Predicting Train Delays at Würzburg Hbf — rules, decisions, status
 
-Last updated: 10 Nov 2026 · PDS Group 18 · Practical Data Science, Information Systems M.Sc., Uni Würzburg, WiSe 2026/27
+Last updated: 11 Nov 2026 · PDS Group 18 · Practical Data Science, Information Systems M.Sc., Uni Würzburg, WiSe 2026/27
 
 This is the working context for every session with an AI assistant (Claude Code reads it automatically). It holds the working rules, decisions, pipeline and current status. Details live in two more files that are read **only when the task needs them** (see Read-when).
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D22, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D23, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## Instructions for the AI assistant
 
@@ -73,6 +73,7 @@ Proposed plan (to be agreed by the group): minimum version (baselines, LightGBM,
 | D20 | `is_through` = planned arrival present; `has_prev_stop` separate; scenario B rows need both |
 | D21 | Refit keeps tree count and threshold; at most 20 tuning settings; weather ablation on validation |
 | D22 | Baselines before enrichment; simple history features first; Bavarian school holidays first; freeze 1 Dec (minimum) and 8 Dec (extensions) |
+| D23 | Weather from Open-Meteo downloaded in UTC and converted to local time (its own "Europe/Berlin" option ignores summer time); Bavarian public holidays incl. 15 Aug, school holidays from the official list, bridge days |
 
 ## Problem definition
 
@@ -102,7 +103,7 @@ Why: start = first month in the archive (two winters); end = last complete month
 
 1. **Download and filter** (`src/01_download.py`, `src/sql/01_filter_month.sql`) — done. Per month: Würzburg rows plus earlier stops of the same trip (same `train_line_ride_id`, lower stop number, planned within 12 h before the Würzburg arrival), linked by `wuerzburg_id`, with `row_role` and `source_month`. Output `data/interim/wuerzburg_YYYY-MM.parquet`; checks in `reports/checks/`.
 2. **Clean** (`src/02_clean.py` + `src/sql/02_clean.sql`) — done (10 Nov 2026: 247,716 planned departures, 230,333 modelling rows; counts in `reports/checks/cleaning_counts.csv` and `through_train_counts.csv`). Input = `row_role = 'wuerzburg'` rows with a planned departure (trains that end at Würzburg are not part of the target). **No departure is deleted** (D19): each one gets `exclude_reason` (first matching rule: `bus`, `no_plan_record`, `canceled`, `dst_night` via `config.dst_change_days()` and `DST_EXCLUDE_HOURS`, `invalid_delay` = delay below −30 min, `duplicate_id`); modelling rows have `exclude_reason` NULL. Compute `dep_delay` and `delayed`; `service_date` = date of the Würzburg planned departure; build `line_id`, `service`, `is_through` (planned arrival present) and `has_prev_stop` (a non-cancelled earlier stop exists) (D20). Write the count per reason and split to `reports/checks/cleaning_counts.csv`. Save earlier stops separately (`wuerzburg_prev_stops.parquet`), keyed by `wuerzburg_id` and `id`. Output `data/processed/wuerzburg_clean.parquet`.
-3. **Enrich** (`src/03_enrich.py`), after the baselines (D22): hourly weather (Open-Meteo, `timezone=Europe/Berlin`; downloaded once and stored in `data/raw/weather/`), public holidays (Bavaria, `holidays` package), school holidays (Bavaria first, official list as CSV; neighbouring states only if time allows).
+3. **Enrich** (`src/03_enrich.py`) — done (11 Nov 2026). Hourly weather at the station from the Open-Meteo archive, **downloaded in UTC and converted to naive local time** (`timezone=Europe/Berlin` in the API is a fixed +1 h offset and would be one hour off in summer); raw JSON kept in `data/raw/weather/`. Calendar per day: public holidays (Bavaria incl. Mariä Himmelfahrt, `holidays` package), school holidays (Bavaria, `reference/school_holidays_bavaria.csv`), bridge days. Output `data/processed/weather_hourly.parquet` (key `local_hour`) and `calendar_daily.parquet` (key `service_date`), joined in step 04; summary in `reports/checks/enrichment_summary.csv` (D23).
 4. **Features** (`src/04_features.py` + `src/sql/04_features.sql`): scenario A and B tables; history from a daily aggregate table (key × day) joined over [D − 29, D − 1). First version: keys `service` × hour and `line_id` / route group; the train-number key with its fallback comes after the first full results table (D22).
 5. **Train and evaluate** (`src/05_train.py`, shared metrics and the day-block bootstrap in `src/evaluate.py`): fixed seeds; `src/evaluate.py` and the baselines B0–B2 are written directly after step 2 and scored on validation; one results table `reports/results.md`; figures in `reports/figures/`. The test run is a single command (`--final`) that refuses to run twice.
 
@@ -174,9 +175,10 @@ pds-db-delays/
 ├── CLAUDE.md, CLAUDE.local.md (gitignored), README.md, requirements*.txt, pytest.ini, run_pipeline.py
 ├── data/{raw,interim,processed}/  # gitignored
 ├── checks/                          # coverage_check.py, category_check.py, data_quality_check.py
+├── reference/school_holidays_bavaria.csv (tracked, with source)
 ├── docs/decision_log.md, docs/project_plan.md, docs/audit_2026-11-10.md, docs/proposal_draft.md
-├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py*, 04_features.py*, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
-├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py
+├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py, 04_features.py*, 05_train.py (baselines so far), evaluate.py, baselines.py, sql/
+├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py, test_enrich.py
 ├── notebooks/01_eda.ipynb, app/streamlit_app.py*, models/
 └── reports/{figures,checks}/, reports/results_validation.md, reports/results.md*
 ```
@@ -189,7 +191,7 @@ pds-db-delays/
 - ~33% of planned arrival or departure times are NaT by design (trains starting or ending at Würzburg); `.dt.date` gives NaN, so `dropna()` before `min()`/`max()`. 47% of departures start at Würzburg → no scenario B features.
 - `train_line_ride_id` repeats on every day of the month: one trip = ride ID + day (12-hour window in step 01).
 - Monthly files for Germany are large (~15 million rows; ~62 MB until Oct 2025, ~345 MB from Nov 2025; ~5 GB total): filter with DuckDB before pandas; never load several full months.
-- **Time zone:** timestamps are naive Europe/Berlin local time (`TIMEZONE`); features and split boundaries use local time, nothing is converted to UTC. Weather from Open-Meteo with `timezone=Europe/Berlin`, joined on the local hour; the doubled October hour is averaged. On the five DST days (27 Oct 2024, 30 Mar 2025, 26 Oct 2025, 29 Mar 2026, 25 Oct 2026) departures planned 00:00–05:00 are excluded and counted. Collection runs at 03/09/15/21 UTC (= 04/10/16/22 h winter, 05/11/17/23 h summer local); matters only for collection gaps.
+- **Time zone:** timestamps are naive Europe/Berlin local time (`TIMEZONE`); features and split boundaries use local time, nothing is converted to UTC. Weather from Open-Meteo is requested in UTC and converted to local time by `03_enrich.py` (the API's `timezone=Europe/Berlin` is a fixed +1 h offset, wrong in summer), then joined on the local hour; the doubled October hour is averaged. On the five DST days (27 Oct 2024, 30 Mar 2025, 26 Oct 2025, 29 Mar 2026, 25 Oct 2026) departures planned 00:00–05:00 are excluded and counted. Collection runs at 03/09/15/21 UTC (= 04/10/16/22 h winter, 05/11/17/23 h summer local); matters only for collection gaps.
 - Earlier stops are searched only inside the same monthly file: a train arriving shortly after midnight on the 1st loses earlier stops from the previous month (a few trains per month, B only).
 - `train_line_station_num` is the position in the full route, not in the data: gaps mean missing stations. Use it for "stops between"; never assume `num − 1` exists before Nov 2025.
 - A monthly file can contain rows planned on the last day of the previous month (Oct 2026: 2 ICE rows on 30 Sep); `source_month` is stored; cleaning drops duplicate ids.
@@ -221,7 +223,7 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (10 Nov 2026).** Step 1 (download, filter) and step 2 (cleaning) are done; data checks, an independent audit (`docs/audit_2026-11-10.md`, 37 findings, none critical) and its fixes are merged into `main`; the audit's recommendations are recorded as proposals D17–D22. `data/processed/wuerzburg_clean.parquet` holds every planned departure with `exclude_reason`, target, `service`, `line_id`, `is_through`, `has_prev_stop` and the split of both scenarios. `src/evaluate.py` (metrics, max-F1 threshold, paired day-block bootstrap) and the baselines B0–B2 exist; `src/05_train.py` fits them on the A training split and writes `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 (timetable columns only) PR-AUC 0.528, ROC-AUC 0.797; B2 − B1 = +0.015 PR-AUC with the interval above zero. The script never loads test-period rows. Tests: 63 passed. The EDA notebook (`notebooks/01_eda.ipynb`, training and validation period only) and its 12 figures exist. The proposal draft is in `docs/proposal_draft.md`. Branches `02-clean`, `03-baselines`, `04-eda` and `05-proposal` (each built on the previous one) are to merge; merging `05-proposal` brings all four. Tests: 64 passed. **Next action:** `03_enrich` (weather, public and Bavarian school holidays), then `04_features`.
+**Current status (11 Nov 2026).** Steps 1 (download, filter), 2 (cleaning) and 3 (weather and calendar tables) are done, as are the evaluation code, the baselines B0–B2 on validation, the EDA notebook and the proposal draft. `reports/results_validation.md` (validation, 1,000 day resamples): B1 PR-AUC 0.513, ROC-AUC 0.785; B2 with timetable and calendar columns PR-AUC 0.535, ROC-AUC 0.800; B2 − B1 = +0.022 PR-AUC, interval above zero. The training script never loads test-period rows. Branches `02-clean` … `05-proposal` are merged into `main`; step 3 is on branch `06-enrich` (to merge). Tests: 75 passed. **Next action:** `04_features` (scenario A and B tables, simple history first, propagation features) with its leakage tests, then B3.
 
 **Now (week 2, until 17 Nov)** — in this order
 
@@ -236,4 +238,4 @@ pds-db-delays/
 - [x] Draft the two-page proposal — 10 Nov, `docs/proposal_draft.md` (names and matriculation numbers still to fill in; question about the GenAI documentation is attached); branch `05-proposal` to merge
 - [ ] Collect 6–10 related-work references on train delay prediction
 
-**Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` (weather, public and Bavarian school holidays); `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.
+**Next (week 3, until 24 Nov):** submit the proposal (~20 Nov); `03_enrich` — done 11 Nov; `04_features` (simple history first) + time-travel, earlier-stop and same-rows tests; B3; Data section draft. **Week 4 (until 1 Dec):** LightGBM A, A′, B with tuning (≤ 20 settings) and refit; sanity checks; weather ablation; final test run once; results table; minimum version frozen. Later weeks: `docs/project_plan.md`.

@@ -46,7 +46,7 @@ The comparison answers a question of its own: how much of a delay is predictable
 
 The control model M-A′ separates the effect of the en-route information (M-B − M-A′) from the effect of the shorter training period. Gradient-boosted trees are chosen because the data is tabular, with interactions (service × hour × weather), missing values and categorical features.
 
-The data pipeline (DuckDB/SQL and Python), the evaluation code and the baselines B0–B2 already exist. On validation, B1 reaches a PR-AUC of 0.513 and B2 of 0.528 (ROC-AUC 0.785 and 0.797), so the advanced models have a clear bar to beat.
+The data pipeline (DuckDB/SQL and Python) up to the weather and holiday tables, the evaluation code and the baselines B0–B2 already exist. On validation, B1 reaches a PR-AUC of 0.513 and B2 of 0.535 (ROC-AUC 0.785 and 0.800), so the advanced models have a clear bar to beat.
 
 **Planned extensions:** explanations with SHAP, and a small Streamlit dashboard that replays real departures of the test period with the predicted probability and its explanation. Data leakage is addressed by a feature whitelist, automated tests and the rule that scenario A never sees information from the day of the trip (weather is the stated exception: observed weather stands in for a forecast).
 
