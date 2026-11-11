@@ -13,6 +13,7 @@ Writes: data/processed/wuerzburg_clean.parquet            (all planned departure
         data/processed/wuerzburg_prev_stops.parquet       (earlier stops of these departures)
         reports/checks/cleaning_counts.csv                (rows per split and exclude_reason)
         reports/checks/through_train_counts.csv           (modelling rows by is_through / has_prev_stop)
+        reports/checks/service_counts.csv                 (modelling rows per split and service)
 
 Usage: python src/02_clean.py
 """
@@ -72,7 +73,7 @@ def clean(con: duckdb.DuckDBPyConnection, files: str, clean_file: Path, prev_fil
 
 
 def write_counts(con: duckdb.DuckDBPyConnection, clean_file: Path) -> None:
-    """Rows per split and exclude_reason, and through-train counts of the modelling rows."""
+    """Rows per split and exclude_reason; modelling rows by through-train flags and by service."""
     f = _quote(clean_file)
     order = "CASE {col} WHEN 'train' THEN 1 WHEN 'val' THEN 2 WHEN 'test' THEN 3 ELSE 4 END"
     counts = con.sql(f"""
@@ -103,7 +104,18 @@ def write_counts(con: duckdb.DuckDBPyConnection, clean_file: Path) -> None:
         SELECT * FROM c
         ORDER BY {order.format(col="split_b")}, is_through DESC, has_prev_stop DESC
     """).df()
+    service = con.sql(f"""
+        SELECT split_a, service, COUNT(*) AS n_rows,
+               COUNT(*) FILTER (WHERE train_type = 'ARV') AS n_arv,
+               ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (PARTITION BY split_a), 2) AS pct_of_split,
+               CASE WHEN split_a <> 'test' THEN ROUND(100 * AVG(delayed), 2) END AS pct_delayed
+        FROM read_parquet('{f}')
+        WHERE exclude_reason IS NULL
+        GROUP BY split_a, service
+        ORDER BY {order.format(col="split_a")}, n_rows DESC
+    """).df()
     config.CHECKS.mkdir(parents=True, exist_ok=True)
+    service.to_csv(config.CHECKS / "service_counts.csv", index=False)
     counts.to_csv(config.CHECKS / "cleaning_counts.csv", index=False)
     through.to_csv(config.CHECKS / "through_train_counts.csv", index=False)
 
@@ -119,6 +131,8 @@ def write_counts(con: duckdb.DuckDBPyConnection, clean_file: Path) -> None:
     print(counts.to_string(index=False))
     print("\n=== Modelling rows per scenario B split: through trains and earlier stops ===")
     print(through.to_string(index=False))
+    print("\n=== Modelling rows per scenario A split and service ===")
+    print(service.to_string(index=False))
     print(f"\nChecks written to {config.CHECKS}")
 
 

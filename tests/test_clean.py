@@ -202,6 +202,10 @@ def test_output_reasons_and_counts_file():
     assert counts["n_rows"].sum() == _q("SELECT COUNT(*) AS n FROM {f}").iloc[0, 0]
     # no delay rate of the test period is written before the final run
     assert counts.loc[counts["split_a"] == "test", "pct_delayed"].isna().all()
+    for name, split in [("through_train_counts.csv", "split_b"), ("service_counts.csv", "split_a")]:
+        table = pd.read_csv(config.CHECKS / name)
+        assert table.loc[table[split] == "test", "pct_delayed"].isna().all(), name
+        assert table["n_rows"].sum() == _q("SELECT COUNT(*) AS n FROM {f} WHERE exclude_reason IS NULL").iloc[0, 0]
 
 
 @needs_output
