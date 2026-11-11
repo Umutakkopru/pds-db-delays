@@ -7,25 +7,39 @@
 --   {first_back}, {last_back}  history window in days before the departure day:
 --                              service dates D - first_back ... D - last_back
 --   {min_rows}  minimum number of departures in a window for a rate to be used
+--   {row_filter}  which cleaned rows the table contains (default: the modelling rows)
 --
 -- Leakage rule 2 (CLAUDE.md): history for day D uses only departures planned
 -- before D - 1 00:00. The window below ends at D - {last_back}; the departure day
 -- and the day before it never enter. tests/test_features.py checks this by
 -- changing later labels and comparing the result (time-travel test).
 
-WITH m AS (
+WITH keyed AS (
     SELECT *,
            hour(departure_planned_time)                   AS planned_hour,
            isodow(departure_planned_time) - 1             AS weekday,        -- 0 = Monday
            -- "route": the line for regional trains, the destination for all others
            COALESCE(line_id, final_destination_station)   AS route_key
     FROM {clean}
-    WHERE exclude_reason IS NULL
+),
+-- Rows of the output table. Normally the modelling rows; for the sensitivity
+-- checks (D9, D18) the cancelled departures and those without timetable record.
+m AS (
+    SELECT * FROM keyed WHERE {row_filter}
+),
+-- Only modelling rows feed the history, whatever the output rows are.
+hist_source AS (
+    SELECT * FROM keyed WHERE exclude_reason IS NULL
 ),
 -- Daily counts per key; the window then sums the days D - first_back ... D - last_back.
+-- The UNION adds an empty (key, day) for every output row, so that an output row
+-- gets its window even when no modelling departure shares its key on that day.
 day_service_hour AS (
-    SELECT service, planned_hour, service_date, COUNT(*) AS n, SUM(delayed) AS d
-    FROM m GROUP BY 1, 2, 3
+    SELECT service, planned_hour, service_date, SUM(n) AS n, SUM(d) AS d
+    FROM (SELECT service, planned_hour, service_date, COUNT(*) AS n, SUM(delayed) AS d FROM hist_source GROUP BY 1, 2, 3
+          UNION ALL
+          SELECT DISTINCT service, planned_hour, service_date, 0, 0 FROM m)
+    GROUP BY 1, 2, 3
 ),
 hist_service_hour AS (
     SELECT service, planned_hour, service_date,
@@ -35,8 +49,11 @@ hist_service_hour AS (
                  RANGE BETWEEN INTERVAL {first_back} DAY PRECEDING AND INTERVAL {last_back} DAY PRECEDING)
 ),
 day_route AS (
-    SELECT service, route_key, service_date, COUNT(*) AS n, SUM(delayed) AS d
-    FROM m GROUP BY 1, 2, 3
+    SELECT service, route_key, service_date, SUM(n) AS n, SUM(d) AS d
+    FROM (SELECT service, route_key, service_date, COUNT(*) AS n, SUM(delayed) AS d FROM hist_source GROUP BY 1, 2, 3
+          UNION ALL
+          SELECT DISTINCT service, route_key, service_date, 0, 0 FROM m)
+    GROUP BY 1, 2, 3
 ),
 hist_route AS (
     SELECT service, route_key, service_date,
@@ -46,7 +63,11 @@ hist_route AS (
                  RANGE BETWEEN INTERVAL {first_back} DAY PRECEDING AND INTERVAL {last_back} DAY PRECEDING)
 ),
 day_all AS (
-    SELECT service_date, COUNT(*) AS n, SUM(delayed) AS d FROM m GROUP BY 1
+    SELECT service_date, SUM(n) AS n, SUM(d) AS d
+    FROM (SELECT service_date, COUNT(*) AS n, SUM(delayed) AS d FROM hist_source GROUP BY 1
+          UNION ALL
+          SELECT DISTINCT service_date, 0, 0 FROM m)
+    GROUP BY 1
 ),
 hist_all AS (
     SELECT service_date, SUM(n) OVER w AS n_hist, SUM(d) OVER w AS d_hist

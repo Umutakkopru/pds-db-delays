@@ -2,9 +2,10 @@
 Step 6: error analysis of the models (where and why they fail).
 
 Works on the scores that src/05_train.py saved for every row of an evaluation
-set. Today that is the validation set; the final run will write the same files
-for the test period and this script then runs unchanged (the analysis code is
-developed on validation, CLAUDE.md evaluation protocol).
+set: validation (default), the rehearsal of the final run, or the test period
+after the final run. The analysis code is developed on validation and runs
+unchanged on the test scores (CLAUDE.md evaluation protocol). Class thresholds
+are the ones step 5 chose on validation rows (reports/checks/thresholds_*.json).
 
 Parts:
   1. Slices: scores of B2 and M-A per service, line, hour, weekday, month,
@@ -14,16 +15,22 @@ Parts:
   3. Confusion matrices at the validation thresholds.
   4. The 20 largest errors of M-A and M-B, grouped into failure types.
 
-Reads:  data/processed/predictions_val_a.parquet, predictions_val_b.parquet   (step 5)
+Reads:  data/processed/predictions_{val|rehearsal|test}_{a|b}.parquet        (step 5)
         data/processed/features_a.parquet, features_b.parquet                 (step 4)
         data/processed/wuerzburg_clean.parquet                                (step 2; delay in minutes, train number)
-Writes: reports/error_analysis_validation.md
-        reports/checks/error_slices_validation.csv
-        reports/figures/errors_calibration_validation.png
-        reports/figures/errors_rule_vs_model_validation.png
+        reports/checks/thresholds_{val|rehearsal|test}.json                   (step 5)
+Writes: reports/error_analysis_<set>.md
+        reports/checks/error_slices_<set>.csv
+        reports/figures/errors_calibration_<set>.png
+        reports/figures/errors_rule_vs_model_<set>.png
 
-Usage: python src/06_error_analysis.py
+Usage: python src/06_error_analysis.py                    # validation scores
+       python src/06_error_analysis.py --set rehearsal
+       python src/06_error_analysis.py --set test         # after src/05_train.py --final
 """
+import argparse
+import json
+
 import duckdb
 import matplotlib
 
@@ -36,17 +43,30 @@ import config
 import evaluate
 import plot_style
 
+# Which scores are analysed: set by --set. The file suffixes are those of src/05_train.py.
+SETS = {"validation": "val", "rehearsal": "rehearsal", "test": "test"}
 EVALUATION_SET = "validation"
-PREDICTIONS = {
-    "A": config.DATA_PROCESSED / "predictions_val_a.parquet",
-    "B": config.DATA_PROCESSED / "predictions_val_b.parquet",
-}
+PREDICTIONS: dict = {}
+REPORT = config.REPORTS / "error_analysis_validation.md"
+
+
+def select_set(name: str) -> None:
+    """Point the module at the scores of one evaluation set."""
+    global EVALUATION_SET, PREDICTIONS, REPORT
+    EVALUATION_SET = name
+    PREDICTIONS = {s: config.DATA_PROCESSED / f"predictions_{SETS[name]}_{s.lower()}.parquet" for s in ("A", "B")}
+    REPORT = config.REPORTS / f"error_analysis_{name}.md"
+    missing = [str(f) for f in PREDICTIONS.values() if not f.exists()]
+    if missing:
+        raise FileNotFoundError(f"No scores for the {name} set ({missing[0]}). Run src/05_train.py"
+                                + {"validation": "", "rehearsal": " --rehearsal", "test": " --final"}[name] + " first.")
+
+
 FEATURES = {
     "A": config.DATA_PROCESSED / "features_a.parquet",
     "B": config.DATA_PROCESSED / "features_b.parquet",
 }
 CLEAN = config.DATA_PROCESSED / "wuerzburg_clean.parquet"
-REPORT = config.REPORTS / f"error_analysis_{EVALUATION_SET}.md"
 MIN_SLICE_ROWS = 300          # smaller slices are too noisy to report
 N_LARGEST_ERRORS = 20
 TARGET = "delayed"
@@ -266,14 +286,15 @@ def pivot_slices(slices: pd.DataFrame, scenario: str, slice_name: str, metric: s
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Error analysis of the scores written by src/05_train.py.")
+    parser.add_argument("--set", choices=list(SETS), default="validation", dest="evaluation_set",
+                        help="which scores to analyse (test: only after the final run)")
+    select_set(parser.parse_args().evaluation_set)
     a = add_slice_columns(load("A"))
     b = add_slice_columns(load("B"))
     y_a, y_b = a[TARGET].to_numpy(), b[TARGET].to_numpy()
-    thresholds = {
-        "b2": evaluate.best_f1_threshold(y_a, a["b2"]), "m_a": evaluate.best_f1_threshold(y_a, a["m_a"]),
-        "b3": float(config.DELAY_THRESHOLD_MIN), "m_b": evaluate.best_f1_threshold(y_b, b["m_b"]),
-        "m_a_prime": evaluate.best_f1_threshold(y_b, b["m_a_prime"]),
-    }
+    # Thresholds are those chosen on validation rows by step 5, never tuned on the analysed set.
+    thresholds = json.loads((config.CHECKS / f"thresholds_{SETS[EVALUATION_SET]}.json").read_text(encoding="utf-8"))
 
     slices = pd.concat([
         slice_table(a, ["service", "line", "hour_band", "weekday_name", "month", "day_type", "precipitation", "wind", "frost"],

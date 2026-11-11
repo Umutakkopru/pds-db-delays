@@ -6,7 +6,7 @@ Purpose: a chronological record of every data and method decision, with the ques
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Who decided: D1–D24 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+Who decided: D1–D25 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
 
 Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; independent audit on 10 Nov, its recommendations recorded as D17–D22; cleaning step next).
 
@@ -40,6 +40,7 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D22 | Order and scope of the remaining steps | Baselines before enrichment; simple history features first; Bavarian school holidays first; minimum version frozen 1 Dec, extensions 8 Dec | One working track must reach a full results table early | – |
 | D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
 | D24 | Feature tables | 21 scenario A features (timetable, calendar, weather, 28-day history), 4 more for scenario B (previous stops) | Time-travel test; single-feature ROC-AUC at most 0.80 | 4 |
+| D25 | Final run | One code path with three modes; lock file; rehearsal one step back in time | Rehearsal: validation optimism 0.002–0.023 PR-AUC; conclusions unchanged | 4, 5 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -534,6 +535,35 @@ Not a decision; recorded here because the Results and Discussion sections are wr
 - **The 20 largest errors per model, by failure type.** M-A: all 20 are missed delays of regional trains with a history rate of a few percent (19 of them the two-hourly RE to Nürnberg); 12 were only 6–8 minutes late, 7 were 9–29 minutes late, 1 was 62 minutes late. The day before, nothing distinguishes these departures from the punctual ones of the same train. M-B: 9 missed delays just over the threshold; 6 missed delays that arose after an on-time previous stop (regional trains, previous stop 14–33 minutes before the departure); 3 false alarms where a train 18–34 minutes late at a stop about two hours away made up its delay; 2 false alarms that ended 4–5 minutes late. About half of the worst errors of both models sit within two minutes of the 6-minute threshold, which is a property of a binary target, not of the models.
 - **Confusion matrices (validation thresholds).** M-A: 6,734 hits, 3,382 missed delays, 5,929 false alarms. M-B: 2,291 hits, 512 missed, 275 false alarms. B3: 2,352 hits, 451 missed, 682 false alarms.
 
+## D25 Final run: one command, a lock and a rehearsal (11 Nov 2026; proposal)
+
+**Question.** How is "the test period is used once" guaranteed, and how do we know the final code works before it is used?
+
+**Decision** (`src/05_train.py`).
+- **One code path, three modes.** `validation` (default): fit on training, score validation. `--final`: settings, tree counts and thresholds from training-only models on validation; refit of all models (baselines included) on training + validation; one scoring of the test period; then the final models are saved under `models/`. `--rehearsal`: the final procedure one step back in time (`REHEARSAL_SPLITS` in `src/config.py`): scenario A trains on Jul 2024 – Jun 2025, validates on Jul – Dec 2025 and is scored on Jan – Jun 2026; scenario B trains on 3 Nov 2025 – Feb 2026, validates on Mar – Apr 2026 and is scored on May – Jun 2026.
+- **Lock.** `--final` writes `reports/final_run.json` (time, git commit, thresholds, row counts) and refuses to start when that file exists or when tracked files have uncommitted changes. Outside `--final` no function returns test-period rows (`load_modelling_rows`, `load_sensitivity_rows`; tested).
+- **Thresholds** are always the ones chosen on validation rows; they are saved (`reports/checks/thresholds_*.json`) and reused by the error analysis, also on the test scores.
+- **Sensitivity checks** (D9, D18) are part of every mode: `src/04_features.py` writes `features_a_sensitivity.parquet` with the scenario A features of cancelled departures and of departures without timetable record; their history comes from modelling rows only.
+- After the final run: `python src/06_error_analysis.py --set test`.
+
+**Result of the rehearsal** (`reports/results_rehearsal.md`; the scored rows are the validation rows, but no choice was made on them).
+
+| Rows | Model | Validation mode (optimistic) | Rehearsal (unbiased) |
+| --- | --- | --- | --- |
+| All departures | B2 | 0.535 | 0.535 |
+| | M-A | 0.603 | 0.597 [0.578, 0.616] |
+| Scenario B rows | B3 | 0.877 | 0.877 |
+| | M-A′ | 0.664 | 0.641 [0.608, 0.673] |
+| | M-B | 0.931 | 0.929 [0.916, 0.939] |
+
+PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except for M-A′ (0.023), whose training set is small. The conclusions hold in the rehearsal: M-A − B2 = +0.062 [+0.053, +0.071]; M-B − M-A′ = +0.287 [+0.263, +0.312]; M-B − B3 = +0.052 [+0.042, +0.063]. M-A′ − M-A = −0.002 [−0.017, +0.013]: the training period makes no measurable difference, so the gain of M-B is the earlier-stop information. With fixed validation thresholds, F1 is 0.591 (M-A), 0.806 (B3) and 0.847 (M-B). The chosen settings differ between the modes while the scores barely move: the grid is flat (see `reports/checks/tuning_*.csv`).
+
+**Sensitivity checks on validation** (`reports/results_validation.md`). Counting the 1,009 cancelled departures as delayed raises the delay rate from 22.0% to 23.7%; PR-AUC of M-A 0.603 → 0.607, ROC-AUC 0.822 → 0.811. Adding the 2,426 departures without timetable record: delay rate 23.2%, PR-AUC 0.606, ROC-AUC 0.820. Neither exclusion changes the picture.
+
+**Alternatives considered.** A separate script for the final run (two code paths that can drift apart); no rehearsal (the final code would run for the first time on the test period).
+
+**Report.** Methodology (evaluation design), Results, Discussion (limitations).
+
 ---
 
 ## Pipeline and checks so far
@@ -550,7 +580,7 @@ Not a decision; recorded here because the Results and Discussion sections are wr
 | Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
 | Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py` | 120 passing (11 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py` | 136 passing (11 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

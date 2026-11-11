@@ -101,6 +101,23 @@ SPLITS = {
     },
 }
 
+# Rehearsal of the final run (src/05_train.py --rehearsal): the same code path as
+# the final run, shifted one step back in time so that the test period stays
+# untouched. The validation period plays the test period; the end of the
+# training period plays validation.
+REHEARSAL_SPLITS = {
+    "A": {
+        "train": ("2024-07-01", "2025-07-01"),
+        "val": ("2025-07-01", "2026-01-01"),
+        "eval": SPLITS["A"]["val"],
+    },
+    "B": {
+        "train": (FULL_COVERAGE_START, "2026-03-01"),
+        "val": ("2026-03-01", "2026-05-01"),
+        "eval": SPLITS["B"]["val"],
+    },
+}
+
 
 def month_range(first: str = FIRST_MONTH, last: str = LAST_MONTH) -> list[str]:
     """Return all months from first to last (inclusive) as 'YYYY-MM' strings."""

@@ -4,7 +4,7 @@
 
 Last updated: 10 Nov 2026 · PDS Group 18
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D24, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D25, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## 1. Assignment brief: key facts
 
@@ -174,7 +174,8 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [ ] SHAP top features make sense (validation)
 - [x] Weather ablation on validation (D21): +0.006 PR-AUC (11 Nov)
 - [x] Error-analysis and slice code, written and tried on validation (11 Nov): `src/06_error_analysis.py`
-- [ ] Refit on training + validation; **final run on the test set, once** (`--final`); results table with n and base rate per row
+- [x] Final-run code written, locked and rehearsed without the test period (11 Nov, D25)
+- [ ] Group confirms D1–D25; then refit on training + validation and **final run on the test set, once** (`python src/05_train.py --final`); results table
 - [ ] Write the Methodology section draft
 - [ ] **Freeze the minimum version**: no change to features, models or settings after this point
 - **Result of the week:** `reports/results.md` with B0–B3, M-A, M-A′, M-B
@@ -182,7 +183,7 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 **Week 5 — extensions (until 8 Dec 2026)**
 
 - [ ] Error analysis on the test results: slices, confusion matrix, 20 largest errors grouped into failure types
-- [ ] Sensitivity checks: cancellations as delayed (D9); rows without timetable record included (D18)
+- [x] Sensitivity checks coded and run on validation (11 Nov); they run again inside the final run (D9, D18)
 - [ ] SHAP global (M-A, M-B)
 - [ ] Streamlit app level 1 (developed on validation rows, switched to the test table at the end), then deploy (level 2)
 - [ ] Write the Results section draft

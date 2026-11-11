@@ -1,10 +1,10 @@
 # Validation results
 
-Written by `src/05_train.py`. Intervals: 1000 bootstrap resamples of whole days. Thresholds maximise F1 on validation unless stated (B0 has a constant score and keeps 0.5). **The test period is not used.** Validation scores of the LightGBM models are optimistic: the same validation rows stop the training early, choose the setting and choose the threshold. The unbiased comparison is the single final run on the test period.
+Written by `src/05_train.py`. Scored period: validation. Intervals: 1000 bootstrap resamples of whole days. Thresholds maximise F1 on validation unless stated (B0 has a constant score and keeps 0.5). **The test period is not used.** Validation scores of the LightGBM models are optimistic: the same validation rows stop the training early, choose the setting and choose the threshold. The unbiased comparison is the single final run on the test period.
 
 ## Scenario A: all departures
 
-Models are fitted on the scenario A training split (152,384 departures on 549 days, 25.7% delayed) and scored on its validation split (45,993 departures on 181 days, 22.0% delayed). B2 uses timetable and calendar columns (`service`, `line_id`, `planned_hour`, `weekday`, `is_through`, `is_public_holiday`, `is_school_holiday`, `is_bridge_day`); M-A uses the 21 scenario A features.
+Models are fitted on the scenario A training split (152,384 departures on 549 days, 25.7% delayed) and scored on 45,993 departures on 181 days, 22.0% delayed. B2 uses timetable and calendar columns (`service`, `line_id`, `planned_hour`, `weekday`, `is_through`, `is_public_holiday`, `is_school_holiday`, `is_bridge_day`); M-A uses the 21 scenario A features.
 
 | Model | PR-AUC [95% CI] | ROC-AUC [95% CI] | Threshold | F1 | Precision | Recall | Accuracy | F1 at 0.5 | Brier |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -29,7 +29,7 @@ Paired differences (same day resamples):
 
 ## Scenario B rows: through trains with an earlier stop
 
-Validation split of scenario B (8,020 departures on 61 days, 35.0% delayed). B1, B2 and M-A are the scenario A models above, scored on these rows. M-A′ and M-B are fitted on the scenario B training split (23,926 departures on 179 days, 36.4% delayed). B3 is the persistence rule of D17: its score is the delay in minutes at the previous stop, its class rule is "6 or more minutes late at the previous stop" (nothing is fitted or tuned; it has no probability, hence no Brier score).
+Scored on 8,020 departures on 61 days, 35.0% delayed. B1, B2 and M-A are the scenario A models above, scored on these rows. M-A′ and M-B are fitted on the scenario B training split (23,926 departures on 179 days, 36.4% delayed). B3 is the persistence rule of D17: its score is the delay in minutes at the previous stop, its class rule is "6 or more minutes late at the previous stop" (nothing is fitted or tuned; it has no probability, hence no Brier score).
 
 | Model | PR-AUC [95% CI] | ROC-AUC [95% CI] | Threshold | F1 | Precision | Recall | Accuracy | F1 at 0.5 | Brier |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -53,15 +53,25 @@ Paired differences (same day resamples): M-A′ − M-A is the effect of the tra
 | M-B LightGBM (with earlier stops) − B3 previous-stop delay | pr_auc | +0.055 [+0.045, +0.066] | yes |
 | M-B LightGBM (with earlier stops) − B3 previous-stop delay | roc_auc | +0.032 [+0.027, +0.038] | yes |
 
+## Sensitivity checks (scenario A)
+
+The same models scored once more with rows that the main evaluation excludes (D9, D18). These rows are never used for fitting. A cancelled departure counts as delayed here.
+
+| Rows | n | Delayed | PR-AUC B2 | ROC-AUC B2 | PR-AUC M-A | ROC-AUC M-A |
+| --- | --- | --- | --- | --- | --- | --- |
+| Main evaluation rows | 45,993 | 22.0% | 0.535 | 0.800 | 0.603 | 0.822 |
+| + cancelled departures counted as delayed (D9) | 47,002 | 23.7% | 0.542 | 0.789 | 0.607 | 0.811 |
+| + departures without timetable record (D18) | 48,419 | 23.2% | 0.536 | 0.797 | 0.606 | 0.820 |
+
 ## Chosen settings
 
-Grid of 12 settings fixed in advance (`src/models.py`, D21); all settings per model are in `reports/checks/tuning_*.csv`. Learning rate 0.05, early stopping after 50 rounds without improvement of the validation log loss, no class weights.
+Grid of 12 settings fixed in advance (`src/models.py`, D21). Learning rate 0.05, early stopping after 50 rounds without improvement of the validation log loss, no class weights. Trees = number found with the training-only model; all settings per model are in `reports/checks/tuning_*.csv`.
 
-| Model | Training rows | Features | Trees | Setting |
+| Model | Fitted on | Features | Trees | Setting |
 | --- | --- | --- | --- | --- |
-| M-A | 152,384 | 21 | 226 | num_leaves=7, min_child_samples=50 |
-| M-A′ | 23,926 | 21 | 296 | num_leaves=7, min_child_samples=50 |
-| M-B | 23,926 | 25 | 182 | num_leaves=31, min_child_samples=100, colsample_bytree=0.7, reg_lambda=5.0 |
+| M-A | 152,384 rows | 21 | 226 | num_leaves=7, min_child_samples=50 |
+| M-A′ | 23,926 rows | 21 | 296 | num_leaves=7, min_child_samples=50 |
+| M-B | 23,926 rows | 25 | 182 | num_leaves=31, min_child_samples=100, colsample_bytree=0.7, reg_lambda=5.0 |
 
 ## Sanity checks
 
