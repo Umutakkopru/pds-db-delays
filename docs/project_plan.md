@@ -169,9 +169,10 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 
 **Week 4 — main models and test run (until 1 Dec 2026)**
 
-- [ ] LightGBM for A, A′ and B on training data; tuning on validation (at most 20 settings, D21)
-- [ ] Sanity checks on validation: single-feature AUC, shuffled target, SHAP top features make sense
-- [ ] Weather ablation on validation (D21; dropped first if time is short)
+- [x] LightGBM for A, A′ and B on training data; tuning on validation (12 settings fixed in advance, D21) — 11 Nov
+- [x] Sanity checks on validation: single-feature AUC, shuffled target (11 Nov)
+- [ ] SHAP top features make sense (validation)
+- [x] Weather ablation on validation (D21): +0.006 PR-AUC (11 Nov)
 - [ ] Error-analysis and slice code, written and tried on validation
 - [ ] Refit on training + validation; **final run on the test set, once** (`--final`); results table with n and base rate per row
 - [ ] Write the Methodology section draft

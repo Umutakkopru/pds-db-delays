@@ -439,6 +439,25 @@ These rows exist only because DB's change feed reported something for them; in 2
 - **Weather ablation:** M-A is trained once without the weather features and compared on validation. It bounds the limitation that observed weather stands in for a forecast. It is the first item dropped if time is short.
 - **Order of work:** features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data; the test run is one command at the end (see `CLAUDE.md`, evaluation protocol).
 
+**Implemented (11 Nov 2026).** `src/models.py` (grid of 12 settings, fixed before any tuning result was seen: `num_leaves` 7/15/31/63 × `min_child_samples` 50/200, LightGBM's default, three regularised variants; learning rate 0.05; early stopping on the validation log loss) and `src/05_train.py`. Chosen on validation: M-A and M-A′ `num_leaves=7, min_child_samples=50` (226 and 296 trees), M-B `num_leaves=31, min_child_samples=100, colsample_bytree=0.7, reg_lambda=5` (182 trees). All settings per model: `reports/checks/tuning_*.csv`.
+
+**Validation results (11 Nov 2026; `reports/results_validation.md`, 1,000 day resamples).** These numbers are optimistic for the LightGBM models, because the same validation rows stop the training, choose the setting and choose the threshold; the unbiased comparison is the final test run.
+
+| Rows | Model | PR-AUC [95% CI] | ROC-AUC |
+| --- | --- | --- | --- |
+| All departures (45,993) | B2 | 0.535 [0.515, 0.557] | 0.800 |
+| | M-A | 0.603 [0.583, 0.622] | 0.822 |
+| Scenario B rows (8,020) | B3 | 0.877 [0.857, 0.893] | 0.909 |
+| | M-A | 0.651 [0.615, 0.683] | 0.789 |
+| | M-A′ | 0.664 [0.632, 0.694] | 0.794 |
+| | M-B | 0.931 [0.919, 0.941] | 0.942 |
+
+Paired differences (PR-AUC): M-A − B2 = +0.068 [+0.059, +0.077]; M-B − M-A′ = +0.267 [+0.244, +0.292] (effect of the earlier-stop features); M-B − B3 = +0.055 [+0.045, +0.066] (gain over the simple rule); M-A′ − M-A = +0.013 [+0.001, +0.025] (training period; ROC-AUC interval includes zero).
+
+**Weather ablation.** M-A without the six weather features: PR-AUC 0.597 against 0.603; difference +0.006 [+0.002, +0.010]. Weather helps a little; the limitation that observed weather stands in for a forecast therefore costs at most about 0.006 PR-AUC on validation.
+
+**Sanity checks.** M-A ROC-AUC 0.822 (alarm limit 0.95). Shuffled training labels, five shuffles with M-A's setting and tree count, no early stopping: validation ROC-AUC mean 0.477, range 0.443–0.506. *Correction of the check itself:* the first version fitted one shuffled model with early stopping on the true validation labels and gave 0.543; early stopping then picks the iteration that happens to fit the validation labels best, so the check was biased. A single shuffle also scatters around 0.5 because a random function of strong features such as the service still orders the trains; the mean of several shuffles is judged (tolerance ± 0.03).
+
 **Alternatives considered.** Scaling the tree count with the data size (one more assumption for little gain).
 
 **Report.** Methodology (evaluation design), Discussion (limitations).
@@ -514,9 +533,9 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
 | Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
 | Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
-| Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B2 on the A validation split; B1, B2, B3 on the scenario B validation rows; 1,000 day resamples) |
+| Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py` | 96 passing (11 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py` | 105 passing (11 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources
