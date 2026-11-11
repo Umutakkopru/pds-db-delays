@@ -61,7 +61,7 @@ Key numbers (all 28 months, Würzburg Hbf):
 | Stations in the archive | 107–108 until 1 Nov 2025; ~5,300 from 2 Nov 2025 | `checks/coverage_check.py` output |
 | ARV rows among all Würzburg rows (arrivals and departures) of the Jul 2024 – Dec 2025 files | 692 of 238,850 (Dec 2025 only) | `reports/checks/train_types_by_month.csv` |
 | ARV share of all Würzburg rows in the Jul – Oct 2026 files | 17.1% | same |
-| ARV among modelling rows (approximate cleaning rules): scenario A training departures; test departures | 330 of 152,421 (0.2%); 13.2% | `docs/audit_2026-11-10.md`, query Q6; final values from `02_clean` |
+| ARV among modelling rows: scenario A training departures; test departures | 330 of 152,384 (0.2%); 4,226 of 31,956 (13.2%) | `reports/checks/service_counts.csv` (`src/02_clean.py`; confirms the audit query Q6) |
 
 ---
 
@@ -518,6 +518,8 @@ Paired differences (PR-AUC): M-A − B2 = +0.068 [+0.059, +0.077]; M-B − M-A�
 
 **Result.** `features_a.parquet`: 230,333 rows, 21 features. `features_b.parquet`: 47,844 rows (23,926 train, 8,020 validation, 15,898 test), 25 features. Missing values (`reports/checks/feature_summary.csv`): `dwell_min` 47% in A (trains starting at Würzburg), `line_id` 36% in A (non-regional trains), history rates 0.2–2.1%, `prev_delay_2` 5.5%; weather and calendar never.
 
+*Correction (11 Nov 2026, Data section draft):* `line_id` is missing for 38.6% of the scenario A rows, not 36% (`feature_summary.csv`: 38.58%; 61.4% of the modelling rows are regional trains, `reports/checks/service_counts.csv`). Nothing else changes.
+
 **Safeguards (tests/test_features.py).** History window recomputed by hand; time-travel test on made-up data and on three real days (changing every label from D − 1 on leaves the features of day D unchanged; changing D − 2 does change them); excluded rows do not feed history; the previous stop is the last usable stop and lies before the Würzburg arrival; tables contain exactly the whitelisted columns; no row in two splits; no single scenario A feature reaches ROC-AUC 0.9 on validation (highest: `hist_rate_route` 0.80). Widening the window by one day on purpose makes six tests fail.
 
 **Report.** Methodology (features, leakage safeguards).
@@ -574,7 +576,7 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 | Coverage check | `checks/coverage_check.py` | `reports/checks/coverage_by_month.csv` |
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
-| Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
+| Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv`, `service_counts.csv` (modelling rows per split and service, added 11 Nov 2026 for the Data section) |
 | Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
 | Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
 | Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |

@@ -1,0 +1,13 @@
+split_a,service,n_rows,n_arv,pct_of_split,pct_delayed
+train,regional,91376,330,59.96,8.52
+train,long_distance,56607,0,37.15,50.23
+train,night,4322,0,2.84,66.24
+train,other,79,0,0.05,36.71
+val,regional,29345,5283,63.8,8.56
+val,long_distance,15248,0,33.15,43.66
+val,night,1384,0,3.01,67.7
+val,other,16,0,0.03,50.0
+test,regional,20751,4226,64.94,
+test,long_distance,10410,0,32.58,
+test,night,766,0,2.4,
+test,other,29,0,0.09,

@@ -163,7 +163,7 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] (11 Nov) `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
 - [x] (11 Nov) Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
 - [x] Baseline B3 (persistence rule) on validation (D17): PR-AUC 0.877, F1 0.806 on the scenario B validation rows (11 Nov)
-- [ ] Write the Data section draft (EDA figures exist; propagation, exactly-on-time trend and B horizon are already in the notebook)
+- [x] Write the Data section draft (11 Nov, `docs/report_data_section.md`: about 1,750 words, 5 tables, 4 figures; open points listed at its end)
 - [ ] Deploy an empty test app on Streamlit Community Cloud (checks Python and LightGBM versions early)
 - **Result of the week:** feature tables with passing leakage tests, B3 score, Data section draft
 
