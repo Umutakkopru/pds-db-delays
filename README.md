@@ -4,7 +4,7 @@ Practical Data Science capstone, Information Systems M.Sc., University of Würzb
 
 We predict whether a train departs Würzburg Hbf 6 or more minutes late (the threshold of Deutsche Bahn's punctuality statistic, applied to departures), once before the trip (scenario A) and once while the train is en route (scenario B), and compare the two. Start here: [`docs/project_plan.md`](docs/project_plan.md) (course requirements, timeline, roles), [`docs/decision_log.md`](docs/decision_log.md) (data and method decisions with evidence).
 
-**Data:** [Deutsche Bahn Data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) (CC BY 4.0, Deutsche Bahn), July 2024 – October 2026.
+**Data:** [Deutsche Bahn Data](https://huggingface.co/datasets/piebro/deutsche-bahn-data) (CC BY 4.0, Deutsche Bahn), July 2024 – October 2026. Weather: [Open-Meteo](https://open-meteo.com/) historical weather API (CC BY 4.0). School holidays: Bavarian State Ministry of Education, BayMBl. 2022 Nr. 747.
 
 ## Setup (macOS, Apple Silicon)
 
@@ -30,7 +30,13 @@ python src/01_download.py
 # 3. Clean: one row per planned departure, target, exclusion reasons
 python src/02_clean.py
 
-# 4. Baselines B0-B2 on the validation split (the test period is not touched)
+# 4. Weather (one download from Open-Meteo, about 1 MB) and holiday tables
+python src/03_enrich.py
+
+# 5. Feature tables for scenario A and B
+python src/04_features.py
+
+# 6. Baselines B0-B3 on the validation splits (the test period is not touched)
 python src/05_train.py
 
 # Whole pipeline (steps that exist so far)
@@ -50,10 +56,11 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05` (steps `01`, `02` and the baseline part of `05` exist; `03` and `04` are planned), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`05` (steps `01`–`04` and the baseline part of `05` exist; LightGBM and the final test run are planned), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
 | `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
+| `reference/` | Small tracked tables with their sources (Bavarian school holidays) |
 | `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
 | `notebooks/` | EDA only, no pipeline logic (`01_eda.ipynb`: training and validation period, writes `reports/figures/eda_*.png`) |
 | `app/` | Streamlit dashboard (planned) |

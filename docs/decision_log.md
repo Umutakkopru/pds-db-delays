@@ -6,7 +6,7 @@ Purpose: a chronological record of every data and method decision, with the ques
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Who decided: D1–D22 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+Who decided: D1–D24 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
 
 Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; independent audit on 10 Nov, its recommendations recorded as D17–D22; cleaning step next).
 
@@ -38,6 +38,8 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D20 | Through trains | `is_through` = planned arrival present; `has_prev_stop` separate; scenario B rows need both | 72 test departures arrive without an earlier stop in the data | 4 |
 | D21 | Evaluation details | Tree count and threshold kept in the refit; tuning at most 20 settings; weather ablation on validation | Refit data is 30–34% larger; weather is observed, not forecast | 4, 6 |
 | D22 | Order and scope of the remaining steps | Baselines before enrichment; simple history features first; Bavarian school holidays first; minimum version frozen 1 Dec, extensions 8 Dec | One working track must reach a full results table early | – |
+| D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
+| D24 | Feature tables | 21 scenario A features (timetable, calendar, weather, 28-day history), 4 more for scenario B (previous stops) | Time-travel test; single-feature ROC-AUC at most 0.80 | 4 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -258,6 +260,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 **Decision.**
 - All features and split boundaries use naive local time; nothing is converted to UTC (`TIMEZONE` in `src/config.py`).
 - Weather from Open-Meteo with `timezone=Europe/Berlin`, joined on the local hour of the planned departure; the doubled October hour is averaged.
+  - *Correction (11 Nov 2026, step 03):* with `timezone=Europe/Berlin` the Open-Meteo archive applies a fixed offset of +1 hour all year (checked for 1 July 2026: `utc_offset_seconds = 3600`), so its "local" times are one hour off during summer time. The weather is therefore downloaded in UTC and converted to Europe/Berlin local time in `src/03_enrich.py`; the rest of the rule is unchanged (see D23).
 - On DST-change days a difference between two naive local times can be off by 60 minutes. Departures planned between 00:00 and 05:00 local time on the five DST days in the data period (27 Oct 2024, 30 Mar 2025, 26 Oct 2025, 29 Mar 2026, 25 Oct 2026) are excluded and counted. The days are computed by `config.dst_change_days()` and tested in `tests/test_config.py`.
 
 **Report.** Data (preprocessing), one sentence.
@@ -368,6 +371,8 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 
 **Decision.** Add baseline **B3** for scenario B: as a class rule (previous-stop delay ≥ 6 min) for F1, precision and recall, and with the previous-stop delay in minutes as the score for PR-AUC and ROC-AUC. B3 is evaluated on the same through-train test rows as M-A′ and M-B; the gain of the model is M-B − B3 with the paired day-block bootstrap (D13). If the gain is small, that is reported as a finding. Implemented in `src/evaluate.py` and `05_train.py`.
 
+**Result on validation (11 Nov 2026).** On the scenario B validation rows (8,020 through trains with an earlier stop, May – June 2026, `reports/results_validation.md`) B3 reaches PR-AUC 0.877 [0.857, 0.893], ROC-AUC 0.909 [0.900, 0.918] and, with its fixed 6-minute rule, F1 0.806 (precision 0.775, recall 0.839). The scenario A baselines on the same rows reach PR-AUC 0.549 (B1) and 0.564 (B2). B3 − B2 = +0.312 PR-AUC [+0.287, +0.338]. This is the bar for M-B.
+
 **Alternatives considered.** Logistic regression on the previous-stop delay alone (same information, one more model; optional); no B baseline (M-B could not be judged).
 
 **Report.** Methodology (baselines), Results.
@@ -452,6 +457,50 @@ These rows exist only because DB's change feed reported something for them; in 2
 
 **Report.** –
 
+## D23 Enrichment: weather and calendar (11 Nov 2026; proposal)
+
+**Question.** Which weather and calendar information is added, from where, and how is it aligned with the departures?
+
+**Decision.**
+- **Weather:** hourly values at the station's location (49.80° N, 9.94° E) from the Open-Meteo archive (reanalysis; CC BY 4.0): temperature, precipitation, wind speed, wind gusts, snowfall, snow depth. Downloaded once in UTC and stored as raw JSON under `data/raw/weather/`; converted to naive local time; the hour that occurs twice when clocks go back is averaged, the hour that does not exist when clocks go forward has no row (D10, corrected). One location only: weather along the route is not used.
+- **Public holidays:** Bavaria from the `holidays` package (version in `requirements-lock.txt`), categories public and catholic, so that Mariä Himmelfahrt (15 August) counts, which Würzburg observes.
+- **School holidays:** Bavaria only (D22), from the official announcement BayMBl. 2022 Nr. 747, stored in `reference/school_holidays_bavaria.csv` with its source; the school-free Buß- und Bettag is added by its rule.
+- **Bridge days:** a working Friday after a public holiday on Thursday, or a working Monday before one on Tuesday.
+- The two tables (`weather_hourly.parquet`, `calendar_daily.parquet`) are joined to the departures in step 04, on the local hour and the service date. Observed weather stands in for a forecast in scenario A (limitation; weather ablation in D21).
+
+**Result** (`reports/checks/enrichment_summary.csv`). 853 days, 28 public holidays, 226 school holiday days, 10 bridge days; 20,470 local hours of weather, no missing values, 2 local hours without a row (the clock changes of March 2025 and March 2026); temperature −10.2 to 37.7 °C; 2,965 hours with precipitation, 232 with snowfall. Every modelling departure gets a weather and a calendar row (test).
+
+**Effect on the baseline.** With the three calendar flags, B2 reaches PR-AUC 0.535 and ROC-AUC 0.800 on validation (before: 0.528 and 0.797); B2 − B1 = +0.022 PR-AUC [+0.014, +0.030].
+
+**Alternatives considered.** Weather of the German Weather Service station Würzburg (more exact, more work to parse); neighbouring states' school holidays (if time allows).
+
+**Report.** Data (additional sources), Methodology (features).
+
+## D24 Feature tables (11 Nov 2026; proposal)
+
+**Question.** Which columns do the models get, and how are the history and propagation features built so that the leakage rules hold?
+
+**Decision** (`src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql`; lists in `src/features_config.py`).
+
+| Group | Columns | Notes |
+| --- | --- | --- |
+| Timetable | `service`, `line_id`, `destination`, `planned_hour`, `weekday`, `is_through`, `stop_position`, `dwell_min` | `destination` is the final destination and serves as the route group of long-distance trains (D7, D14); `dwell_min` is the planned stop time at Würzburg (missing for trains that start here) |
+| Calendar | `is_public_holiday`, `is_school_holiday`, `is_bridge_day` | D23 |
+| Weather | `temperature_c`, `precipitation_mm`, `wind_speed_kmh`, `wind_gust_kmh`, `snowfall_cm`, `snow_depth_m` | at the planned departure hour; observed, not forecast |
+| History | `hist_rate_service_hour`, `hist_rate_route`, `hist_n_route`, `hist_rate_all` | delay rate over the service dates D − 29 … D − 2 (28 days), i.e. [D − 29, D − 1 00:00); "route" = line for regional trains, destination otherwise; a rate is missing when its window holds fewer than 20 departures (`MIN_HISTORY_ROWS`) |
+| Propagation (B only) | `prev_delay`, `prev_delay_2`, `prev_minutes_to_departure`, `prev_stops_between` | last and second-to-last usable earlier stop by planned time (not cancelled, with a reported time) |
+
+- History is computed from modelling rows only, on all periods: for a test-period day it uses the outcomes of earlier test-period days, as a live system would.
+- The train-number history key with its fallback chain (D14) is not built yet (D22: only after the first full results table).
+- Not included: month or year (the models should not memorise periods; season enters through weather and history), Friday/Sunday evening flags (weekday and hour are given; trees combine them).
+- Scenario B rows carry the same scenario A feature values, so M-A′, M-B and B3 are scored on identical rows.
+
+**Result.** `features_a.parquet`: 230,333 rows, 21 features. `features_b.parquet`: 47,844 rows (23,926 train, 8,020 validation, 15,898 test), 25 features. Missing values (`reports/checks/feature_summary.csv`): `dwell_min` 47% in A (trains starting at Würzburg), `line_id` 36% in A (non-regional trains), history rates 0.2–2.1%, `prev_delay_2` 5.5%; weather and calendar never.
+
+**Safeguards (tests/test_features.py).** History window recomputed by hand; time-travel test on made-up data and on three real days (changing every label from D − 1 on leaves the features of day D unchanged; changing D − 2 does change them); excluded rows do not feed history; the previous stop is the last usable stop and lies before the Würzburg arrival; tables contain exactly the whitelisted columns; no row in two splits; no single scenario A feature reaches ROC-AUC 0.9 on validation (highest: `hist_rate_route` 0.80). Widening the window by one day on purpose makes six tests fail.
+
+**Report.** Methodology (features, leakage safeguards).
+
 ---
 
 ## Pipeline and checks so far
@@ -463,9 +512,11 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Category check | `checks/category_check.py` | `reports/checks/line_types_over_time.csv` |
 | Data quality check | `checks/data_quality_check.py` | `reports/checks/quality_by_month.csv`, `low_count_days.csv`, `coverage_nov_2025_daily.csv`, `suspicious_days.csv` |
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
-| Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0, B1, B2 on the A validation split, 1,000 day resamples) |
+| Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
+| Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
+| Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B2 on the A validation split; B1, B2, B3 on the scenario B validation rows; 1,000 day resamples) |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
-| Tests | `tests/test_leakage.py`, `tests/test_config.py`, `tests/test_data.py`, `tests/test_filter_sql.py`, `tests/test_clean.py`, `tests/test_evaluate.py` | 63 passing (10 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py` | 96 passing (11 Nov 2026) |
 
 ## Sources
 

@@ -14,12 +14,29 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_RAW = ROOT / "data" / "raw"
 DATA_INTERIM = ROOT / "data" / "interim"
 DATA_PROCESSED = ROOT / "data" / "processed"
+REFERENCE = ROOT / "reference"   # small tracked tables (school holidays)
 SQL_DIR = ROOT / "src" / "sql"
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
 CHECKS = REPORTS / "checks"
 
 STATION = "Würzburg Hbf"
+
+# Step 03 (enrichment). Weather is requested for the station's location in UTC
+# and converted to local time by us: with timezone=Europe/Berlin the Open-Meteo
+# archive applies a fixed +1 h offset all year, which is one hour off in summer.
+STATION_LATITUDE = 49.8018
+STATION_LONGITUDE = 9.9358
+WEATHER_URL = "https://archive-api.open-meteo.com/v1/archive"
+WEATHER_VARIABLES = {            # Open-Meteo name -> our column name
+    "temperature_2m": "temperature_c",
+    "precipitation": "precipitation_mm",
+    "wind_speed_10m": "wind_speed_kmh",
+    "wind_gusts_10m": "wind_gust_kmh",
+    "snowfall": "snowfall_cm",
+    "snow_depth": "snow_depth_m",
+}
+HOLIDAY_SUBDIVISION = "BY"       # Bavaria; Würzburg also observes Mariä Himmelfahrt (15 Aug)
 
 # All timestamps in the archive are naive German local time (Europe/Berlin).
 # We keep them as local time; weather is joined on local time as well.
@@ -55,6 +72,14 @@ LAST_MONTH = "2026-10"
 # All stations (incl. small earlier stops of RB/RE) are in the archive from
 # 2 Nov 2025 (dataset changelog); 3 Nov 2025 is the first full day.
 FULL_COVERAGE_START = "2025-11-03"
+
+# History features (decision log D14, D22): for a departure on day D the delay
+# rate is taken over the service dates D - 29 ... D - 2, i.e. [D - 29, D - 1 00:00).
+# Scenario A is asked on D - 1, when that day is not complete yet.
+HISTORY_FIRST_DAY_BACK = 29
+HISTORY_LAST_DAY_BACK = 2
+# A history rate is used only if its window holds at least this many departures.
+MIN_HISTORY_ROWS = 20
 
 SEED = 42
 

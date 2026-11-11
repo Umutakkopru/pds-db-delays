@@ -162,11 +162,16 @@ def test_logistic_baseline_handles_unseen_categories_and_missing_lines():
         "planned_hour": rng.integers(5, 23, n),
         "weekday": rng.integers(0, 7, n),
         "is_through": rng.choice([True, False], n),
+        "is_public_holiday": rng.random(n) < 0.05,
+        "is_school_holiday": rng.random(n) < 0.25,
+        "is_bridge_day": rng.random(n) < 0.02,
     })
     train["delayed"] = ((train["service"] == "long_distance") & (rng.random(n) < 0.7)).astype(int)
     model = baselines.make_logistic_baseline().fit(baselines.logistic_frame(train), train["delayed"])
     new = pd.DataFrame({"service": ["long_distance", "regional", "brand_new"], "line_id": [None, "RE99", None],
-                        "planned_hour": [8, 8, 3], "weekday": [0, 0, 0], "is_through": [True, False, True]})
+                        "planned_hour": [8, 8, 3], "weekday": [0, 0, 0], "is_through": [True, False, True],
+                        "is_public_holiday": [False, True, False], "is_school_holiday": [False, False, True],
+                        "is_bridge_day": [False, False, False]})
     p = model.predict_proba(baselines.logistic_frame(new))[:, 1]
     assert p.shape == (3,) and np.all((p >= 0) & (p <= 1))
     assert p[0] > p[1]
@@ -181,9 +186,32 @@ def test_training_script_refuses_the_test_split():
         train_step.load_modelling_rows("A", splits=("train", "test"))
 
 
-@pytest.mark.skipif(not train_step.CLEAN_FILE.exists(), reason="run src/02_clean.py first")
-def test_training_script_loads_only_development_rows():
-    df = train_step.load_modelling_rows("A")
+needs_features = pytest.mark.skipif(not all(f.exists() for f in train_step.FEATURE_FILES.values()),
+                                    reason="run src/04_features.py first")
+
+
+@needs_features
+@pytest.mark.parametrize("scenario", ["A", "B"])
+def test_training_script_loads_only_development_rows(scenario):
+    df = train_step.load_modelling_rows(scenario)
     assert set(df["split"]) == {"train", "val"}
-    assert df["departure_planned_time"].max() < pd.Timestamp(train_step.config.SPLITS["A"]["test"][0])
-    assert df["exclude_reason"].isna().all()
+    assert df["departure_planned_time"].max() < pd.Timestamp(train_step.config.SPLITS[scenario]["test"][0])
+
+
+def test_rule_score_gets_no_brier_score():
+    y = np.array([0, 1, 1, 0])
+    minutes = np.array([0.0, 12.0, 30.0, 3.0])      # a delay in minutes, not a probability
+    m = evaluate.score_metrics(y, minutes, probability=False)
+    assert "brier" not in m and m["roc_auc"] == 1.0
+
+
+def test_fixed_rule_threshold_is_not_tuned():
+    y = np.array([0, 1, 1, 0, 1, 0] * 20)
+    minutes = np.array([0.0, 4.0, 30.0, 3.0, 9.0, 7.0] * 20)
+    days = np.repeat(np.arange(12), 10)
+    table, _ = train_step.score_table(y, days, {"rule": minutes}, n_resamples=20,
+                                      fixed_threshold={"rule": 6.0}, not_a_probability=("rule",))
+    row = table.iloc[0]
+    assert row["Threshold"] == "6 min (rule)" and row["Brier"] == "–"
+    # at 6 minutes: predicted delayed = 30, 9, 7 -> 2 of 3 right; found 2 of 3 delayed
+    assert row["Precision"] == "0.667" and row["Recall"] == "0.667"

@@ -4,7 +4,7 @@
 
 Last updated: 10 Nov 2026 · PDS Group 18
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D22, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D24, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
 
 ## 1. Assignment brief: key facts
 
@@ -159,10 +159,10 @@ This is the full list of weeks. Items are in working order; each week ends with 
 **Week 3 — enrichment and features (until 24 Nov 2026)**
 
 - [ ] Submit the proposal around 20 Nov 2026 (official deadline 30 Nov); ask about the GenAI documentation in the same message
-- [ ] `03_enrich`: weather (downloaded once, stored in `data/raw/weather/`), public holidays, Bavarian school holidays
-- [ ] `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
-- [ ] Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
-- [ ] Baseline B3 (persistence rule) on validation (D17)
+- [x] `03_enrich`: weather (downloaded once in UTC, stored in `data/raw/weather/`), public holidays, Bavarian school holidays, bridge days (11 Nov; D23)
+- [x] (11 Nov) `04_features`: scenario A and B tables; history per service × hour and per line (D22); propagation features from the previous stop
+- [x] (11 Nov) Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
+- [x] Baseline B3 (persistence rule) on validation (D17): PR-AUC 0.877, F1 0.806 on the scenario B validation rows (11 Nov)
 - [ ] Write the Data section draft (EDA figures exist; propagation, exactly-on-time trend and B horizon are already in the notebook)
 - [ ] Deploy an empty test app on Streamlit Community Cloud (checks Python and LightGBM versions early)
 - **Result of the week:** feature tables with passing leakage tests, B3 score, Data section draft
@@ -271,4 +271,5 @@ Criteria: clear prediction target, enough data, clean license, no textbook datas
 - Ke, G. et al. (2017). *LightGBM: A Highly Efficient Gradient Boosting Decision Tree.* NeurIPS.
 - Assignment brief "Final Project: Your Own End-to-End Machine Learning Project", PDS course room, WiSe 2026/27
 - Own data checks: `check_db.py`, `check_old.py` (outside the repository, `../pds-db-check/`); `checks/*.py` in this repository
-- To add when used: weather source (Open-Meteo, CC BY 4.0), `holidays` package, school holiday list source
+- Weather: Open-Meteo historical weather API (https://open-meteo.com/, CC BY 4.0), reanalysis data; used from 11 Nov 2026
+- Public holidays: Python package `holidays`; school holidays: Bekanntmachung des Bayerischen Staatsministeriums für Unterricht und Kultus, BayMBl. 2022 Nr. 747 (https://www.verkuendung-bayern.de/baymbl/2022-747/)

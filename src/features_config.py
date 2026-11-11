@@ -1,9 +1,9 @@
 """
 Feature whitelist per scenario and the list of forbidden columns.
 
-Models may only use the columns listed in FEATURES[scenario]. The lists are
-filled when src/04_features.py is written (week 3); tests/test_leakage.py
-checks them against FORBIDDEN_COLUMNS on every run.
+Models may only use the columns listed in FEATURES[scenario]; src/04_features.py
+writes exactly these columns. tests/test_leakage.py checks the lists against
+FORBIDDEN_COLUMNS, tests/test_features.py checks the tables against the lists.
 
 Reads:  nothing
 Writes: nothing
@@ -75,12 +75,36 @@ ALLOWED_DERIVED_INPUTS = {"service", "line_id", "is_through"}
 # scenario A.
 PROPAGATION_PREFIX = "prev_"
 
-# Columns of the logistic-regression baseline B2 (timetable only, all known the
-# day before). Holidays are added after step 03, the route group after step 04.
-BASELINE_FEATURES = ["service", "line_id", "planned_hour", "weekday", "is_through"]
+# Columns of the logistic-regression baseline B2: timetable and calendar, all
+# known the day before. The route group follows with step 04.
+BASELINE_FEATURES = [
+    "service", "line_id", "planned_hour", "weekday", "is_through",
+    "is_public_holiday", "is_school_holiday", "is_bridge_day",
+]
 
-# Allowed feature columns per scenario (filled in week 3).
+# Key, split and target columns of the feature tables: never model inputs.
+META_COLUMNS = ["id", "service_date", "departure_planned_time", "split_a", "split_b", "delayed"]
+
+# Features of scenario A: everything is known the day before the departure
+# (weather is observed and stands in for a forecast, a stated limitation).
+TIMETABLE_FEATURES = [
+    "service", "line_id", "destination", "planned_hour", "weekday",
+    "is_through", "stop_position", "dwell_min",
+]
+CALENDAR_FEATURES = ["is_public_holiday", "is_school_holiday", "is_bridge_day"]
+WEATHER_FEATURES = [
+    "temperature_c", "precipitation_mm", "wind_speed_kmh", "wind_gust_kmh", "snowfall_cm", "snow_depth_m",
+]
+HISTORY_FEATURES = ["hist_rate_service_hour", "hist_rate_route", "hist_n_route", "hist_rate_all"]
+
+# Features only scenario B may use: delays at stops the train has already passed.
+PROPAGATION_FEATURES = ["prev_delay", "prev_delay_2", "prev_minutes_to_departure", "prev_stops_between"]
+
+# Text columns that models treat as categories (category lists come from training rows only).
+CATEGORICAL_FEATURES = ["service", "line_id", "destination"]
+
+# Allowed feature columns per scenario: models use exactly these columns.
 FEATURES: dict[str, list[str]] = {
-    "A": [],
-    "B": [],
+    "A": TIMETABLE_FEATURES + CALENDAR_FEATURES + WEATHER_FEATURES + HISTORY_FEATURES,
+    "B": TIMETABLE_FEATURES + CALENDAR_FEATURES + WEATHER_FEATURES + HISTORY_FEATURES + PROPAGATION_FEATURES,
 }

@@ -1,0 +1,13 @@
+quantity,value
+calendar days,853
+public holidays,28
+school holiday days,226
+bridge days,10
+weather local hours,20470
+local hours without weather (clock goes forward),2
+weather values missing,0
+temperature min (C),-10.2
+temperature max (C),37.7
+hours with precipitation > 0,2965
+hours with snowfall > 0,232
+wind gust max (km/h),78.1
