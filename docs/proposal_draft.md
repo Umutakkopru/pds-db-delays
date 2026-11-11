@@ -1,6 +1,6 @@
 # Topic proposal (draft)
 
-> Draft of 10 Nov 2026 for the two-page proposal (deadline 30 Nov 2026, planned submission ~20 Nov). The text below the line is the proposal; it has about 700 words including the model table; check that it fits on two pages in the submission format. Before submitting: fill in the three names and matriculation numbers (they are not stored in the repository), let the group confirm decisions D1–D22, and copy the text into the submission form or template. All numbers come from `reports/checks/cleaning_counts.csv` and `reports/results_validation.md`.
+> Draft of 10 Nov 2026 for the two-page proposal (deadline 30 Nov 2026, planned submission ~20 Nov). The text below the line is the proposal; it has about 700 words including the model table; check that it fits on two pages in the submission format. Before submitting: fill in the three names and matriculation numbers (they are not stored in the repository), let the group confirm decisions D1–D25, and copy the text into the submission form or template. All numbers come from `reports/checks/cleaning_counts.csv` and `reports/results_validation.md`.
 
 ---
 
@@ -59,7 +59,7 @@ Question to the supervisor: the brief asks for a section on the use of generativ
 ## Checklist before submitting
 
 - [ ] Names and matriculation numbers of all three members filled in
-- [ ] Group registered in the course room (hard deadline 15 Nov 2026)
-- [ ] Decisions D1–D22 confirmed by the group (B3 and the control model are named in the proposal)
+- [x] Group registered in the course room (hard deadline 15 Nov 2026)
+- [ ] Decisions D1–D25 confirmed by the group (B3 and the control model are named in the proposal)
 - [ ] Numbers still equal `reports/checks/cleaning_counts.csv` and `reports/results_validation.md`
 - [ ] Length checked in the submission format (maximum two pages)

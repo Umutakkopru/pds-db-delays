@@ -82,6 +82,14 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 | `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`), error analysis (`error_analysis_validation.md`), figures; final results table (planned) |
 | `data/` | Raw, interim and processed data (not in Git) |
 
+## Drafts as PDF
+
+```bash
+python tools/export_pdf.py   # proposal, report sections and decision sheet → docs/pdf/
+```
+
+Needs Google Chrome (or Chromium/Edge) for printing. The layout is a plain A4 page, not the chair's template.
+
 ## AI use
 
 AI use is documented in the "Use of generative AI" section of the report.

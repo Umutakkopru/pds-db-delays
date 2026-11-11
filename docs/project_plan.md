@@ -124,7 +124,7 @@ This is the full list of weeks. Items are in working order; each week ends with 
 **Week 1 — setup and data (until 10 Nov 2026)**
 
 - [x] Third member found (9 Nov 2026)
-- [ ] **Register the group in the course room by 15 Nov 2026, 23:59** (hard deadline; not done on 10 Nov)
+- [x] **Register the group in the course room by 15 Nov 2026, 23:59** — done (reported on 11 Nov 2026)
 - [x] Assignment brief added and checked: submission 18 Jan 2027, presentation 25 Jan 2027 corrected
 - [ ] Download the chair's report template into `../Informations/`
 - [x] Repository scaffold: folders, `README.md`, `requirements.txt`, `.gitignore`, `pytest.ini`, `src/config.py`, `run_pipeline.py`
@@ -140,13 +140,13 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [x] Project review (10 Nov): 37 findings, fixes on branch `audit-2026-11-10`
 - [x] Audit recommendations recorded as proposals D17–D22 (10 Nov)
 - [x] Audit branch merged into `main` (10 Nov)
-- [ ] Confirm D1–D22 in the group
-- [ ] Share `docs/project_plan.md` and `docs/decision_log.md` with both members and get agreement (D1–D22)
+- [ ] Confirm D1–D25 in the group (`docs/group_decision_sheet.md`)
+- [ ] Share `docs/project_plan.md` and `docs/decision_log.md` with both members and get agreement (D1–D25)
 - [x] Cleaning step written (10 Nov): `wuerzburg_clean.parquet`, 230,333 modelling rows
 
 **Week 2 — cleaning, baselines, proposal draft (until 17 Nov 2026)**
 
-- [ ] Register the group by 15 Nov 2026 (hard deadline)
+- [x] Register the group by 15 Nov 2026 (hard deadline) — done
 - [ ] Merge the audit branch, push to GitHub, download the chair's template
 - [x] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
 - [x] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
@@ -176,7 +176,7 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [x] Error-analysis and slice code, written and tried on validation (11 Nov): `src/06_error_analysis.py`
 - [x] Final-run code written, locked and rehearsed without the test period (11 Nov, D25)
 - [ ] Group confirms D1–D25; then refit on training + validation and **final run on the test set, once** (`python src/05_train.py --final`); results table
-- [ ] Write the Methodology section draft
+- [x] Write the Methodology section draft (11 Nov, `docs/report_methodology_section.md`: about 1,800 words, 3 tables; open points at its end, incl. the code review by a second member that the text claims)
 - [ ] **Freeze the minimum version**: no change to features, models or settings after this point
 - **Result of the week:** `reports/results.md` with B0–B3, M-A, M-A′, M-B
 
@@ -247,6 +247,8 @@ Code lives in one documented GitHub repository linked from the PDF. The decision
 ## 9. GenAI documentation
 
 The brief requires a dedicated section stating which parts of the work used GenAI and which prompts were used.
+
+- **Tone of the section:** truthful and specific. It names the tasks where AI assistance was used (code drafts, checks, text drafts), gives representative prompts, and describes the working mode: a member set each task, decided between the options, ran the code and checked the outputs while working, and corrected errors that the checks found (examples are in the decision log as dated correction notes). The rest of the report is written as the team's work and does not narrate the tool.
 
 - Each member keeps their own AI-use log (gitignored `genai_log.md` or outside the repository) and logs as they go.
 - Minimum per entry: date, tool, task, 1–3 representative prompts (original language), how the output was used (as is, edited, starting point) and that it was checked.
