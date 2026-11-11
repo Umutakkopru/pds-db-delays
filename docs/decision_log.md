@@ -6,7 +6,7 @@ Purpose: a chronological record of every data and method decision, with the ques
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Who decided: D1–D24 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+Who decided: D1–D25 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
 
 Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; independent audit on 10 Nov, its recommendations recorded as D17–D22; cleaning step next).
 
@@ -40,6 +40,7 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D22 | Order and scope of the remaining steps | Baselines before enrichment; simple history features first; Bavarian school holidays first; minimum version frozen 1 Dec, extensions 8 Dec | One working track must reach a full results table early | – |
 | D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
 | D24 | Feature tables | 21 scenario A features (timetable, calendar, weather, 28-day history), 4 more for scenario B (previous stops) | Time-travel test; single-feature ROC-AUC at most 0.80 | 4 |
+| D25 | Final run | One code path with three modes; lock file; rehearsal one step back in time | Rehearsal: validation optimism 0.002–0.023 PR-AUC; conclusions unchanged | 4, 5 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -320,6 +321,7 @@ M-A is trained on 18 months of all departures, M-B on 6 months of through trains
 - **No class weighting** in LightGBM or logistic regression (keeps probabilities calibrated for the Brier score and the dashboard); the threshold handles the 23% positive rate.
 - **Scenario B results by horizon:** reported by `service` and by planned minutes from the previous stop (< 10, 10–30, > 30 min).
   - *Note (10 Nov 2026, EDA):* these bins do not fit the data. Measured to the Würzburg departure, no scenario B row is under 10 minutes (regional through trains stop about 10 minutes at Würzburg) and every long-distance train is over 30 minutes; medians are 16 min (regional), 54 min (long-distance) and 78 min (night). Proposed instead: report by service, and within it by 10–20, 20–45 and over 45 minutes. To settle with the results table.
+  - *Implemented (11 Nov 2026):* `src/06_error_analysis.py` reports scenario B by service and by the horizon bins 10–20, 20–45 and over 45 minutes.
 
 **Alternatives considered.** Training M-A on the B window only (loses the long history that is A's advantage); rolling-origin evaluation (more effort; still optional).
 
@@ -439,6 +441,25 @@ These rows exist only because DB's change feed reported something for them; in 2
 - **Weather ablation:** M-A is trained once without the weather features and compared on validation. It bounds the limitation that observed weather stands in for a forecast. It is the first item dropped if time is short.
 - **Order of work:** features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data; the test run is one command at the end (see D13).
 
+**Implemented (11 Nov 2026).** `src/models.py` (grid of 12 settings, fixed before any tuning result was seen: `num_leaves` 7/15/31/63 × `min_child_samples` 50/200, LightGBM's default, three regularised variants; learning rate 0.05; early stopping on the validation log loss) and `src/05_train.py`. Chosen on validation: M-A and M-A′ `num_leaves=7, min_child_samples=50` (226 and 296 trees), M-B `num_leaves=31, min_child_samples=100, colsample_bytree=0.7, reg_lambda=5` (182 trees). All settings per model: `reports/checks/tuning_*.csv`.
+
+**Validation results (11 Nov 2026; `reports/results_validation.md`, 1,000 day resamples).** These numbers are optimistic for the LightGBM models, because the same validation rows stop the training, choose the setting and choose the threshold; the unbiased comparison is the final test run.
+
+| Rows | Model | PR-AUC [95% CI] | ROC-AUC |
+| --- | --- | --- | --- |
+| All departures (45,993) | B2 | 0.535 [0.515, 0.557] | 0.800 |
+| | M-A | 0.603 [0.583, 0.622] | 0.822 |
+| Scenario B rows (8,020) | B3 | 0.877 [0.857, 0.893] | 0.909 |
+| | M-A | 0.651 [0.615, 0.683] | 0.789 |
+| | M-A′ | 0.664 [0.632, 0.694] | 0.794 |
+| | M-B | 0.931 [0.919, 0.941] | 0.942 |
+
+Paired differences (PR-AUC): M-A − B2 = +0.068 [+0.059, +0.077]; M-B − M-A′ = +0.267 [+0.244, +0.292] (effect of the earlier-stop features); M-B − B3 = +0.055 [+0.045, +0.066] (gain over the simple rule); M-A′ − M-A = +0.013 [+0.001, +0.025] (training period; ROC-AUC interval includes zero).
+
+**Weather ablation.** M-A without the six weather features: PR-AUC 0.597 against 0.603; difference +0.006 [+0.002, +0.010]. Weather helps a little; the limitation that observed weather stands in for a forecast therefore costs at most about 0.006 PR-AUC on validation.
+
+**Sanity checks.** M-A ROC-AUC 0.822 (alarm limit 0.95). Shuffled training labels, five shuffles with M-A's setting and tree count, no early stopping: validation ROC-AUC mean 0.477, range 0.443–0.506. *Correction of the check itself:* the first version fitted one shuffled model with early stopping on the true validation labels and gave 0.543; early stopping then picks the iteration that happens to fit the validation labels best, so the check was biased. A single shuffle also scatters around 0.5 because a random function of strong features such as the service still orders the trains; the mean of several shuffles is judged (tolerance ± 0.03).
+
 **Alternatives considered.** Scaling the tree count with the data size (one more assumption for little gain).
 
 **Report.** Methodology (evaluation design), Discussion (limitations).
@@ -501,6 +522,48 @@ These rows exist only because DB's change feed reported something for them; in 2
 
 **Report.** Methodology (features, leakage safeguards).
 
+## Error analysis on validation: findings (11 Nov 2026)
+
+Not a decision; recorded here because the Results and Discussion sections are written from it. Source: `src/06_error_analysis.py` → `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`. The same script runs unchanged on the test period after the final run.
+
+- **M-A is more than a service detector, but only for long-distance and night trains.** Inside a service (where the service itself cannot help) M-A reaches ROC-AUC 0.701 for long-distance trains (B2: 0.616), 0.832 for night trains (0.721) and 0.661 for regional trains (0.628). For regional trains the PR-AUC is 0.158 at a base rate of 0.086, and at M-A's overall threshold (0.289) the recall is 0 for 10 of the 11 regional lines: the day before, the model practically never calls a regional train delayed.
+- **Bad months are underestimated.** In January 2026 the observed delay rate is 29.4%, the mean prediction 21.7%; in the other validation months they differ by at most 2.5 points. The 28-day history reacts too slowly to a sudden bad period.
+- **Weather slices.** Below 0 °C the delay rate is 27.7% (against 21.3%) and the mean prediction 20.8%: frost days are underestimated. Rain or snow in the departure hour makes no difference to the delay rate (22.0% in both).
+- **Scenario B, rule against model.** The 6-minute rule B3 is right in 37.4% of the cases when the train was 6–9 minutes late at the previous stop; M-B in 72.7% (454 against 198 wrong predictions among 725 departures). For 10–19 minutes: 80.1% against 90.0%. Below 6 minutes the two are equal. The whole gain of M-B over B3 comes from trains that are moderately late at the previous stop.
+- **Scenario B by service.** PR-AUC M-A′ / B3 / M-B: long-distance 0.650 / 0.922 / 0.940; regional 0.151 / 0.670 / 0.764; night 0.868 / 0.901 / 0.947. The en-route information helps regional trains most in relative terms.
+- **Calibration.** Expected calibration error 0.017 (M-A) and 0.016 (M-B) without any calibration step; M-A is slightly too low between 40% and 60%, M-B slightly too high between 50% and 70%.
+- **The 20 largest errors per model, by failure type.** M-A: all 20 are missed delays of regional trains with a history rate of a few percent (19 of them the two-hourly RE to Nürnberg); 12 were only 6–8 minutes late, 7 were 9–29 minutes late, 1 was 62 minutes late. The day before, nothing distinguishes these departures from the punctual ones of the same train. M-B: 9 missed delays just over the threshold; 6 missed delays that arose after an on-time previous stop (regional trains, previous stop 14–33 minutes before the departure); 3 false alarms where a train 18–34 minutes late at a stop about two hours away made up its delay; 2 false alarms that ended 4–5 minutes late. About half of the worst errors of both models sit within two minutes of the 6-minute threshold, which is a property of a binary target, not of the models.
+- **Confusion matrices (validation thresholds).** M-A: 6,734 hits, 3,382 missed delays, 5,929 false alarms. M-B: 2,291 hits, 512 missed, 275 false alarms. B3: 2,352 hits, 451 missed, 682 false alarms.
+
+## D25 Final run: one command, a lock and a rehearsal (11 Nov 2026; proposal)
+
+**Question.** How is "the test period is used once" guaranteed, and how do we know the final code works before it is used?
+
+**Decision** (`src/05_train.py`).
+- **One code path, three modes.** `validation` (default): fit on training, score validation. `--final`: settings, tree counts and thresholds from training-only models on validation; refit of all models (baselines included) on training + validation; one scoring of the test period; then the final models are saved under `models/`. `--rehearsal`: the final procedure one step back in time (`REHEARSAL_SPLITS` in `src/config.py`): scenario A trains on Jul 2024 – Jun 2025, validates on Jul – Dec 2025 and is scored on Jan – Jun 2026; scenario B trains on 3 Nov 2025 – Feb 2026, validates on Mar – Apr 2026 and is scored on May – Jun 2026.
+- **Lock.** `--final` writes `reports/final_run.json` (time, git commit, thresholds, row counts) and refuses to start when that file exists or when tracked files have uncommitted changes. Outside `--final` no function returns test-period rows (`load_modelling_rows`, `load_sensitivity_rows`; tested).
+- **Thresholds** are always the ones chosen on validation rows; they are saved (`reports/checks/thresholds_*.json`) and reused by the error analysis, also on the test scores.
+- **Sensitivity checks** (D9, D18) are part of every mode: `src/04_features.py` writes `features_a_sensitivity.parquet` with the scenario A features of cancelled departures and of departures without timetable record; their history comes from modelling rows only.
+- After the final run: `python src/06_error_analysis.py --set test`.
+
+**Result of the rehearsal** (`reports/results_rehearsal.md`; the scored rows are the validation rows, but no choice was made on them).
+
+| Rows | Model | Validation mode (optimistic) | Rehearsal (unbiased) |
+| --- | --- | --- | --- |
+| All departures | B2 | 0.535 | 0.535 |
+| | M-A | 0.603 | 0.597 [0.578, 0.616] |
+| Scenario B rows | B3 | 0.877 | 0.877 |
+| | M-A′ | 0.664 | 0.641 [0.608, 0.673] |
+| | M-B | 0.931 | 0.929 [0.916, 0.939] |
+
+PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except for M-A′ (0.023), whose training set is small. The conclusions hold in the rehearsal: M-A − B2 = +0.062 [+0.053, +0.071]; M-B − M-A′ = +0.287 [+0.263, +0.312]; M-B − B3 = +0.052 [+0.042, +0.063]. M-A′ − M-A = −0.002 [−0.017, +0.013]: the training period makes no measurable difference, so the gain of M-B is the earlier-stop information. With fixed validation thresholds, F1 is 0.591 (M-A), 0.806 (B3) and 0.847 (M-B). The chosen settings differ between the modes while the scores barely move: the grid is flat (see `reports/checks/tuning_*.csv`).
+
+**Sensitivity checks on validation** (`reports/results_validation.md`). Counting the 1,009 cancelled departures as delayed raises the delay rate from 22.0% to 23.7%; PR-AUC of M-A 0.603 → 0.607, ROC-AUC 0.822 → 0.811. Adding the 2,426 departures without timetable record: delay rate 23.2%, PR-AUC 0.606, ROC-AUC 0.820. Neither exclusion changes the picture.
+
+**Alternatives considered.** A separate script for the final run (two code paths that can drift apart); no rehearsal (the final code would run for the first time on the test period).
+
+**Report.** Methodology (evaluation design), Results, Discussion (limitations).
+
 ---
 
 ## Pipeline and checks so far
@@ -514,9 +577,10 @@ These rows exist only because DB's change feed reported something for them; in 2
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv` |
 | Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
 | Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
-| Evaluation code and baselines | `src/evaluate.py`, `src/baselines.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B2 on the A validation split; B1, B2, B3 on the scenario B validation rows; 1,000 day resamples) |
+| Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py` | 96 passing (11 Nov 2026) |
+| Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py` | 136 passing (11 Nov 2026) |
 
 ## Sources
 
