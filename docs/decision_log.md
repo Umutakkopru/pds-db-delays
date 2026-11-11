@@ -223,6 +223,7 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 **Decision.**
 - `line_id`: line prefix when present ("RB53", "RE8"); otherwise `train_type` + digits for RE/RB rows before December 2025; ARV rows keep their line; NULL for long-distance trains. To verify while cleaning: the RE/RB label of a train number before December 2025 matches its line prefix after.
   - *Correction (10 Nov 2026, audit E-07):* the line format is not a clean function of the date. Among modelling rows, 2,442 departures from 1 Dec 2025 on have digit-only lines (December 2025 is mixed; August 2026 has some again) and 825 departures before December 2025 already carry a prefix. The rule is therefore applied by format (prefix present or not), not by date. From December 2025, 1,901 departures have type RB with a line starting with RE; which label wins is still to be settled with the planned `train_number` check.
+  - *Check done (11 Nov 2026):* for regional modelling rows, the train type (RE/RB) of a train number with a digit-only line before December 2025 was compared with the prefix of the same train number and line afterwards. They agree for 78,066 of 78,351 departures (99.6%; 200 train numbers). The exception is one train number of line 8 (285 departures) that ran as RE before and as RB8 after. The rule "type + digits before, prefix after" therefore gives the same `line_id` across the format change; the D19 rule (line prefix wins) stands. Ad hoc DuckDB query on `wuerzburg_clean.parquet`; row counts only, no delays.
 - `service`: long_distance (ICE, IC, EC), night (NJ, EN), regional (RE, RB, ARV), other.
 - `train_type` kept for reporting only, not as a model feature.
 - ICE rows have no line number (22.6–30.7% of the Würzburg rows per month have none); for ICE the train number or route is used instead.
@@ -552,6 +553,14 @@ Not a decision; it closes the sanity check "the most important features make dom
 
 **Report.** Results (explainability: importance figure, previous-stop effect), Discussion (limitations: short scenario B training window, no extrapolation).
 
+## Open proposals P1–P3 (11 Nov 2026; for the group, before the final run)
+
+Not decisions yet. They answer three weaknesses seen on validation; the list for the meeting is `docs/group_decision_sheet.md`.
+
+- **P1 Operating points per service.** Evidence (ad hoc run on 11 Nov 2026 in the rehearsal setting: M-A tuned on Jul 2024 – Jun 2025 / Jul – Dec 2025, refitted, scored on Jan – Jun 2026; thresholds chosen on Jul – Dec 2025 only). With the overall threshold (0.306) M-A reaches F1 0.591 on all departures, but on the 29,345 regional departures recall 0.6% (F1 0.013). With a threshold chosen per service: regional 0.109 → recall 40.5%, precision 16.3%, F1 0.233; long-distance and night unchanged (F1 0.644 and 0.848). Over all departures the per-service thresholds give F1 0.531 (precision 0.413, recall 0.745), i.e. lower than the single threshold. The model does rank regional trains: the 5% with the highest score are delayed 21.3% of the time, the top 10% 19.4%, against 8.6% on average. Proposal: the single threshold stays the main operating point; per-service thresholds and the top-5%/10% delay rates are reported in addition (code in `src/05_train.py` / `src/06_error_analysis.py`, before the final run).
+- **P2 Weather ablation for the scenario B models in the script.** Evidence: SHAP findings above (M-B 0.9314 with weather, 0.9303 without; ad hoc). Proposal: features stay; the ablation moves into `src/05_train.py` so that the number is reproducible.
+- **P3 Winter.** The test period has no winter and stays as it is (D4). Proposal: report the rehearsal scores (January – June 2026, unbiased, D25) next to the test scores.
+
 ## D25 Final run: one command, a lock and a rehearsal (11 Nov 2026; proposal)
 
 **Question.** How is "the test period is used once" guaranteed, and how do we know the final code works before it is used?
@@ -594,11 +603,11 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv`, `service_counts.csv` (modelling rows per split and service, added 11 Nov 2026 for the Data section) |
 | Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
 | Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
-| Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (validation only so far) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
+| Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (modes: validation, `--rehearsal`, `--final`) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
 | Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
 | SHAP (extension) | `src/07_explain.py` | `reports/shap_validation.md`, `reports/checks/shap_importance_validation.csv`, `reports/figures/shap_importance_validation.png`, `shap_dependence_validation.png`; after the final run `--set test` |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py` | 146 passing (11 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py` | 147 passing (11 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

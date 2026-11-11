@@ -33,3 +33,12 @@ def test_scenario_b_validation_lies_inside_scenario_a_validation():
     a0, a1 = config.SPLITS["A"]["val"]
     b0, b1 = config.SPLITS["B"]["val"]
     assert a0 <= b0 < b1 <= a1
+
+
+def test_pdf_export_takes_the_text_between_the_two_rules():
+    import sys
+    sys.path.insert(0, str(config.ROOT / "tools"))
+    import export_pdf
+
+    assert export_pdf.section_text("notes\n\n---\n\n## 3 Data\n\ntext\n\n---\n\n## Open points\n").strip() == "## 3 Data\n\ntext"
+    assert export_pdf.section_text("# Sheet\n\nno rules here\n") == "# Sheet\n\nno rules here\n"

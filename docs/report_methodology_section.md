@@ -1,6 +1,6 @@
 # Report section 4: Methodology (draft)
 
-> Draft of 11 Nov 2026 for section 4 of the final report (planned length 3–4 pages, `docs/project_plan.md` section 7). The text between the two lines is the section: about 1,800 words of text and three tables, probably 4–4.5 pages in the template, slightly above the plan. Decisions D1–D25 are proposals until the group confirms them; if a decision changes, the matching paragraph changes with it. The section describes the method only: scores, chosen settings and the outcomes of the sanity checks belong to section 5 and are not repeated here. Every statement is traced to code or to the decision log in "Where the statements come from" at the end. Citations are written as [Author year] and are replaced by the template's citation style.
+> Draft of 11 Nov 2026 for section 4 of the final report (planned length 3–4 pages, `docs/project_plan.md` section 7). The text between the two lines is the section: about 1,650 words of text and three tables; 4 pages in the plain PDF layout (`docs/pdf/report_methodology_section.pdf`). Decisions D1–D25 are proposals until the group confirms them; if a decision changes, the matching paragraph changes with it. The section describes the method only: scores, chosen settings and the outcomes of the sanity checks belong to section 5 and are not repeated here. Every statement is traced to code or to the decision log in "Where the statements come from" at the end. Citations are written as [Author year] and are replaced by the template's citation style.
 
 ---
 
@@ -22,7 +22,7 @@ The prediction is made at two moments (Table 6). Comparing them answers how much
 
 ### 4.2 Pipeline
 
-The work is one pipeline of seven scripts that runs from the raw monthly files to the result tables with one command, in about two minutes after the download. The steps are: (1) download at a fixed dataset revision and filter to Würzburg with DuckDB; (2) clean and compute the target; (3) add weather and calendar; (4) build the feature tables; (5) train and evaluate; (6) error analysis; (7) SHAP explanations. Data preparation is written in SQL (DuckDB), modelling in Python (scikit-learn, LightGBM [Ke et al. 2017]). Split dates, thresholds and the random seed are defined in one configuration file. All random steps use the same fixed seed, and LightGBM runs in its deterministic mode, so a second run gives identical numbers.
+The work is one pipeline of seven scripts (download and filter, clean, enrich, features, train and evaluate, error analysis, explanations) that runs from the raw monthly files to the result tables with one command, in about two minutes after the download. Data preparation is written in SQL (DuckDB), modelling in Python (scikit-learn, LightGBM [Ke et al. 2017]). Split dates, thresholds and the random seed are defined in one configuration file, and LightGBM runs in its deterministic mode, so a second run gives identical numbers.
 
 ### 4.3 Features
 
@@ -42,15 +42,15 @@ Scenario A uses 21 features, scenario B the same 21 plus 4 (Table 7). Models may
 
 **Previous stops.** The last earlier stop is the latest stop of the same trip that is planned before the arrival at Würzburg, is not cancelled and has a reported time. Its delay is the departure delay, or the arrival delay if the stop has no departure.
 
-**Left out on purpose.** The raw train type (its labels change in December 2025, section 3.3); the train number (many values, and it can change with the yearly timetable); month and year (the models should not memorise periods; season enters through weather and history); and all flags that the source sets only once a disruption is known (additional stop, replacement train, missing timetable record). These flags are used to filter rows, never as features.
+**Left out on purpose.** The raw train type (its labels change, section 3.3), the train number, month and year (the models should not memorise periods), and all flags that the source sets only once a disruption is known; these flags filter rows and are never features.
 
 **Weather is observed, not forecast.** In scenario A the weather of the departure hour stands in for a forecast that would be available the day before. This favours scenario A slightly. We bound the effect by training the scenario A model once without the weather features (section 5).
 
 ### 4.4 Split
 
-The split is chronological and never random (Table 3 in section 3.6): a model is always evaluated on departures that lie after everything it was trained on, as in real use. A random split would put departures of the same day, with the same weather and the same disruptions, on both sides.
+The split is chronological and never random (Table 3 in section 3.6): a model is always evaluated on departures that lie after everything it was trained on, as in real use. A random split would put departures of the same day, with the same disruptions, on both sides.
 
-- **Scenario A:** training July 2024 – December 2025, validation January – June 2026, test July – October 2026. The validation period contains a winter, so tuning sees bad-weather conditions.
+- **Scenario A:** training July 2024 – December 2025, validation January – June 2026 (it contains a winter), test July – October 2026.
 - **Scenario B:** training 3 November 2025 – April 2026, validation May – June 2026, the same test period. It starts later because the earlier stops of regional trains are in the data only from that date (section 3.3).
 
 The test period is the most recent data and is used once (section 4.6). Its limitation is that it contains no winter.
@@ -71,7 +71,7 @@ The test period is the most recent data and is used once (section 4.6). Its limi
 
 **Baselines.** B1 falls back to the rate of the service when a service-hour cell has fewer than 30 training departures. B3 needs no training: its class rule is the 6-minute threshold applied to the previous stop, and its ranking score is the previous-stop delay in minutes. M-B is useful only if it beats this rule.
 
-**Main model.** We use gradient-boosted decision trees (LightGBM). They are the established strong choice for tabular data [Grinsztajn et al. 2022], learn interactions such as service × hour without hand-built terms, and handle missing values and categorical features directly, both of which occur here by design (section 3.6). Category lists are taken from the training rows; a category that appears only later is treated as missing. We use no class weights, so that the predicted probabilities stay calibrated; the class threshold handles the imbalance instead.
+**Main model.** We use gradient-boosted decision trees (LightGBM). They are the established strong choice for tabular data [Grinsztajn et al. 2022], learn interactions such as service × hour without hand-built terms, and handle missing values and categorical features directly. Category lists are taken from the training rows; a category that appears only later is treated as missing. We use no class weights, so that the predicted probabilities stay calibrated; the class threshold handles the imbalance instead.
 
 **Control model.** M-A is trained on 18 months of all departures, M-B on 6 months of through trains. The difference between them would mix two things: the previous-stop information, and a different training period and row set. M-A′ has the features of M-A and the training rows of M-B. The effect of the previous-stop information is M-B − M-A′; the effect of the training period is M-A′ − M-A.
 
@@ -83,7 +83,9 @@ The test period is the most recent data and is used once (section 4.6). Its limi
 
 **One run, technically enforced.** The test period is used by a single command. It writes a marker file with the time and the code version and refuses to start if the marker exists or if the code has uncommitted changes. Outside this command no function of the pipeline returns rows of the test period. Features, tuning, error analysis and explanations were developed on validation data only.
 
-**Rehearsal.** Validation scores are optimistic, because the same rows stop the training, choose the setting and choose the threshold. Before the final run we therefore ran the whole final procedure one step back in time: the last part of the training period plays the role of the validation set and the validation period plays the role of the test set. This checks the final code on real data and measures the optimism without touching the test period (section 5).
+**What was seen of the test period before.** The first data checks, made before this rule was set, covered all 28 months in aggregate: rows per day, cancellation shares and delay rates per month, and the delay rate by train type in October 2026. These aggregates informed the choice of topic and the cleaning rules. No feature, model, setting or threshold was chosen with them, and from the cleaning step on no delay statistic of the test period was computed.
+
+**Rehearsal.** Validation scores are optimistic, because the same rows stop the training, choose the setting and choose the threshold. Before the final run we therefore ran the whole final procedure one step back in time, with the validation period in the role of the test set. This checks the final code on real data and measures the optimism without touching the test period (section 5).
 
 ### 4.7 Evaluation
 
@@ -93,27 +95,18 @@ The test period is the most recent data and is used once (section 4.6). Its limi
 
 **Same rows.** Row sets with different delay rates are not compared with each other. B0, B1, B2 and M-A are scored on all departures; M-A, M-A′, B3 and M-B on the identical scenario B rows.
 
-**Beyond the overall score.** Because the service dominates the delay rate (section 3.7), all results are also reported per service, and by line, hour, weekday, month, day type and weather; scenario B also by the planned time since the previous stop. We group the 20 largest errors of each model into failure types. Two sensitivity checks repeat the evaluation with the rows that cleaning set aside: cancelled departures counted as delayed, and departures without a timetable record included. SHAP values [Lundberg and Lee 2017] show which features the models rely on.
+**Beyond the overall score.** Because the service dominates the delay rate (section 3.7), all results are also reported per service and by further slices (line, hour, month, weather; scenario B also by the planned time since the previous stop), and the 20 largest errors of each model are grouped into failure types. Two sensitivity checks repeat the evaluation with the rows that cleaning set aside: cancelled departures counted as delayed, and departures without a timetable record included. SHAP values [Lundberg and Lee 2017] show which features the models rely on.
 
 ### 4.8 Data leakage: rules and safeguards
 
-A model that sees information from the future looks good in the evaluation and fails in use. In this project the risk is high, because the realised times sit in the same row as the features. Six rules apply:
-
-1. Realised times and delays at Würzburg, and anything derived from them, are never features.
-2. History ends two days before the departure (section 4.3).
-3. Scenario B uses only stops that the train has already passed.
-4. Category lists, encoders and the baselines' rates are fitted on training rows; the threshold on validation rows.
-5. Weather is observed weather (stated exception, section 4.3).
-6. Disruption flags only filter rows.
-
-Rules alone do not protect against mistakes, so four safeguards check them:
+A model that sees information from the future looks good in the evaluation and fails in use. In this project the risk is high, because the realised times sit in the same row as the features. The rules are: realised times and delays at Würzburg are never features; history ends two days before the departure; scenario B uses only stops that the train has already passed; category lists, encoders and rates are fitted on training rows and the threshold on validation rows; disruption flags only filter rows. Observed weather is the one stated exception (section 4.3). Rules alone do not protect against mistakes, so four safeguards check them:
 
 - **Feature lists.** Models read exactly the columns on the allowed list. Every raw column of the source is classified as allowed or forbidden; a new, unclassified column fails a test.
-- **Automated tests.** 146 tests run before every training run. The most important one is a time-travel test: changing every outcome from day D − 1 on must leave the features of day D unchanged, while changing day D − 2 must change them. Other tests check that the splits are chronological and disjoint, that scenario A has no previous-stop feature, that the previous stop lies before the Würzburg arrival, that scenario B rows carry exactly the scenario A feature values (so that all models are scored on identical rows), and that the test period cannot be loaded outside the final run. We also tested the tests: widening the history window by one day on purpose makes six of them fail.
+- **Automated tests.** 147 tests run before every training run. The most important one is a time-travel test: changing every outcome from day D − 1 on must leave the features of day D unchanged, while changing day D − 2 must change them. Other tests check that the splits are chronological and disjoint, that scenario A has no previous-stop feature, that the previous stop lies before the Würzburg arrival, that scenario B rows carry exactly the scenario A feature values (so that all models are scored on identical rows), and that the test period cannot be loaded outside the final run. We also tested the tests: widening the history window by one day on purpose makes six of them fail.
 - **Sanity checks on results.** No single scenario A feature may reach a ROC-AUC of 0.9 on its own. A model trained on shuffled labels must score a ROC-AUC of about 0.5. A scenario A ROC-AUC above 0.95 would be treated as a leak, not as a success. The most important features must make domain sense.
 - **Review.** Feature and split code is read by a second group member.
 
-One selection remains that no test can remove: cancelled departures are excluded, although a cancellation is known only afterwards. This is standard, because the target is undefined for a train that does not run, and its effect is measured by the first sensitivity check.
+One selection remains: cancelled departures are excluded, although a cancellation is known only afterwards. The target is undefined for a train that does not run; the first sensitivity check measures the effect.
 
 ---
 
@@ -133,7 +126,7 @@ One selection remains that no test can remove: cancelled departures are excluded
 | Refit, single run, marker file, rehearsal | `src/05_train.py`; `REHEARSAL_SPLITS` in `src/config.py`; D21, D25 |
 | Metrics, day-block bootstrap, paired differences | `src/evaluate.py`; D13 |
 | Slices, failure types, sensitivity checks, SHAP | `src/06_error_analysis.py`, `src/07_explain.py`; D9, D18 |
-| Leakage rules and safeguards; 146 tests; six tests fail when the window is widened | `CLAUDE.md` (leakage rules); `tests/`; D24 |
+| Leakage rules and safeguards; 147 tests; six tests fail when the window is widened | `CLAUDE.md` (leakage rules); `tests/`; D24 |
 
 ## Open points before this goes into the template
 
@@ -141,6 +134,6 @@ One selection remains that no test can remove: cancelled departures are excluded
 - [ ] **"Review" in 4.8 is not true yet:** no second member has read the feature and split code so far. Either the review happens before submission, or the sentence is removed.
 - [ ] References in the template's style: [Ke et al. 2017] and [Grinsztajn et al. 2022] are in the "Sources" list of `docs/decision_log.md`; [Lundberg and Lee 2017] (SHAP) was added there on 11 Nov 2026. Check all three against the original papers before submission.
 - [ ] Table numbers continue from section 3 (Tables 1–5); renumber if section 3 is shortened.
-- [ ] After the final run: check that "146 tests" and "about two minutes" are still right.
+- [ ] After the final run: check that "147 tests" and "about two minutes" are still right.
 - [ ] **Length.** If it has to shrink to 3–4 pages, cut first: the pipeline paragraph (4.2) down to two sentences with a link to the repository; "Left out on purpose" in 4.3 down to one sentence; the numbered list of rules in 4.8 (the safeguards carry the content).
 - [ ] Optional figure if space allows: a timeline of the two splits and the history window (none is included now).
