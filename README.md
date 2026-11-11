@@ -42,12 +42,16 @@ python src/05_train.py
 # 7. Error analysis of the validation scores (slices, calibration, largest errors)
 python src/06_error_analysis.py
 
+# 8. SHAP explanations of the LightGBM models on the validation rows
+python src/07_explain.py
+
 # Rehearsal of the final procedure, one step back in time (test period untouched)
 python src/05_train.py --rehearsal
 
 # The single final run on the test period: ONCE, after the group has agreed; refuses a second run
 # python src/05_train.py --final
 # python src/06_error_analysis.py --set test
+# python src/07_explain.py --set test
 
 # Whole pipeline (steps that exist so far)
 python run_pipeline.py
