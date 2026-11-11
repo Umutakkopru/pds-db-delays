@@ -610,6 +610,7 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 - Arverio BW construction notice RE 8, 21 Dec 2025 – 6 Feb 2026: https://www.arverio-bw.de/fileadmin/user_upload/Arverio_Baden-Wuerttemberg/Fahrplanabweichungen/141b_ABW_UPDATE_Baustelle_RE8_21.12.-06.02.26_Wuerzburg-Lauda.pdf
 - Grinsztajn, L., Oyallon, E., Varoquaux, G. (2022). Why do tree-based models still outperform deep learning on tabular data? NeurIPS Datasets and Benchmarks Track.
 - Ke, G. et al. (2017). LightGBM: A Highly Efficient Gradient Boosting Decision Tree. NeurIPS.
+- Lundberg, S. M., Lee, S.-I. (2017). A Unified Approach to Interpreting Model Predictions. NeurIPS. (SHAP; cited in the Methodology draft)
 
 ---
 

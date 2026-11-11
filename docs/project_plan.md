@@ -176,7 +176,7 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] Error-analysis and slice code, written and tried on validation (11 Nov): `src/06_error_analysis.py`
 - [x] Final-run code written, locked and rehearsed without the test period (11 Nov, D25)
 - [ ] Group confirms D1–D25; then refit on training + validation and **final run on the test set, once** (`python src/05_train.py --final`); results table
-- [ ] Write the Methodology section draft
+- [x] Write the Methodology section draft (11 Nov, `docs/report_methodology_section.md`: about 1,800 words, 3 tables; open points at its end, incl. the code review by a second member that the text claims)
 - [ ] **Freeze the minimum version**: no change to features, models or settings after this point
 - **Result of the week:** `reports/results.md` with B0–B3, M-A, M-A′, M-B
 
