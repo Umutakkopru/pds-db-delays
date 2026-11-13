@@ -4,7 +4,7 @@ Last updated: 13 Nov 2026 · PDS Group 18 · Practical Data Science, Information
 
 This is the working context for every session with an AI assistant (Claude Code reads it automatically). It holds the working rules, decisions, pipeline and current status. Details live in two more files that are read **only when the task needs them** (see Read-when).
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D25, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status of decisions (13 Nov 2026):** D1–D26 were prepared by one member, who decided on 13 Nov 2026 to proceed with them (D26); a confirmation or objection by the group is recorded in the decision log when it happens. **The final run on the test period was done on 13 Nov 2026: features, models, settings, thresholds and the evaluation code are frozen. Do not change them and do not re-run `--final`.** What remains is reporting, the dashboard and the documents.
 
 ## Instructions for the AI assistant
 
@@ -188,8 +188,8 @@ pds-db-delays/
 ├── tools/export_pdf.py              # drafts in docs/ → docs/pdf/
 ├── src/config.py, features_config.py, 01_download.py, 02_clean.py, 03_enrich.py, 04_features.py, 05_train.py (validation, `--rehearsal`, `--final`), 06_error_analysis.py, 07_explain.py, evaluate.py, baselines.py, models.py, plot_style.py, sql/
 ├── tests/test_leakage.py, test_config.py, test_data.py, test_filter_sql.py, test_clean.py, test_evaluate.py, test_enrich.py, test_features.py, test_models.py, test_error_analysis.py, test_final_run.py, test_explain.py
-├── notebooks/01_eda.ipynb, app/streamlit_app.py*, models/
-└── reports/{figures,checks}/, reports/results_validation.md, reports/results.md*
+├── notebooks/01_eda.ipynb, app/streamlit_app.py*, models/ (final models: m_a, m_a_prime, m_b as .txt + .json)
+└── reports/{figures,checks}/, reports/results_validation.md, results_rehearsal.md, results.md (final), final_run.json, error_analysis_*.md, shap_*.md
 ```
 
 ## Known gotchas
@@ -234,7 +234,7 @@ pds-db-delays/
 
 ## Current status and to-do
 
-**Current status (11 Nov 2026).** Everything up to the final run exists and is tested: seven pipeline steps (`python run_pipeline.py`, about two minutes), four baselines, three LightGBM models, error analysis, the SHAP check on validation, and the final-run code with its lock. **The final run has not been done and the test period has not been used.** Commands: `python src/05_train.py` (validation), `--rehearsal` (final procedure one step back in time, test period untouched), `--final` (once; refuses a second run and uncommitted code); then `python src/06_error_analysis.py --set test` and `python src/07_explain.py --set test`. Results so far, PR-AUC: validation mode: M-A 0.603 (B2 0.535), M-B 0.931 (B3 0.877, M-A′ 0.664); rehearsal, unbiased for the validation period: M-A 0.597, M-B 0.929, M-A′ 0.641; all conclusions hold (D25). Tests: 151 passed. Proposals P1 (operating points per service) and P2 (weather ablation for the scenario B models) are coded in `src/05_train.py` (13 Nov 2026) and wait for the group like D1–D25: in the rehearsal a per-service threshold lifts M-A's recall on regional trains from 0.6% to 40.5% at 16.3% precision; M-B gains only +0.001 PR-AUC from weather. Drafts of report section 3 (Data, `docs/report_data_section.md`: 5 tables, 1 figure; no test-period delay rates) and section 4 (Methodology, `docs/report_methodology_section.md`: 3 tables; method only, no scores) exist, each 4 pages in the plain PDF layout (`docs/pdf/`); cut text is parked at the end of the Data draft. `docs/group_decision_sheet.md` lists D1–D25 and three open proposals (P1–P3) for the group meeting. Steps 3–6, the final-run code, the two report drafts and the SHAP step are merged into `main` (11 Nov 2026). **Next action:** the group confirms D1–D25 and decides P1–P3 (`docs/group_decision_sheet.md`); then run `--final` once from a clean `main`. Order after that (agreed 11 Nov): results and error analysis on the test period, extensions without effect on the results (dashboard) last, then report assembly and slides. Until then: proposal submission (~20 Nov), code review of the feature and split code by a second member (safeguard 4; the Methodology draft states it), dashboard level 1 on validation rows.
+**Current status (13 Nov 2026).** The modelling part is finished. The single final run on the test period (July – October 2026, 31,956 departures) was done on 13 Nov 2026 from commit `2c09d2c` (`reports/final_run.json`; a second run is refused). **Test results, PR-AUC:** all departures: B1 0.523, B2 0.545, M-A 0.629 [0.610, 0.648] (ROC-AUC 0.833); scenario B rows (15,898): B3 0.885, M-A′ 0.690, M-B 0.935 [0.928, 0.942]. Paired differences: M-A − B2 +0.084, M-B − M-A′ +0.245, M-B − B3 +0.051, all intervals above zero; M-A′ − M-A −0.002 (interval includes zero). Test scores are in the range of validation (M-A 0.603, M-B 0.931) and rehearsal (0.597, 0.929). Error analysis and SHAP on the test period are done (`reports/error_analysis_test.md`, `reports/shap_test.md`); details in the decision log, section "Final results on the test period". Tests: 151 passed. **Frozen:** features, models, settings, thresholds, evaluation code. **Remaining, in this order (agreed 13 Nov):** (1) dashboard level 1 on the test rows with the saved models, then deployment; (2) repository clean-up (LICENSE, README); (3) documents last: proposal (hard deadline 30 Nov; names and matriculation numbers missing), report sections 1, 2, 5, 6, 7 and the two mandatory sections, template, slides.
 
 **Now (week 2, until 17 Nov)** — in this order
 

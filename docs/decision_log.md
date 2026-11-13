@@ -613,6 +613,52 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 
 **Report.** Methodology (what was fixed before the test run), Discussion (limitations, next steps: finer history keys).
 
+## Final results on the test period (13 Nov 2026)
+
+Not a decision: the record of the single final run. `python src/05_train.py --final` was run once on 13 Nov 2026 from commit `2c09d2c` (marker `reports/final_run.json`; a second run is refused, checked). Output: `reports/results.md`, `reports/checks/thresholds_test.json`, `models/`, then `reports/error_analysis_test.md` and `reports/shap_test.md`. Nothing was changed afterwards. Test period: July – October 2026, 31,956 departures on 123 days (23.0% delayed); scenario B rows: 15,898 through trains with an earlier stop (37.6% delayed).
+
+**Main results (PR-AUC; 1,000 day resamples).**
+
+| Rows | Model | Validation mode (optimistic) | Rehearsal (Jan – Jun 2026) | **Test (Jul – Oct 2026)** |
+| --- | --- | --- | --- | --- |
+| All departures | B1 | 0.513 | – | 0.523 [0.502, 0.544] |
+| | B2 | 0.535 | 0.535 | 0.545 [0.522, 0.566] |
+| | M-A | 0.603 | 0.597 | **0.629 [0.610, 0.648]** |
+| Scenario B rows | B3 | 0.877 | 0.877 | 0.885 [0.873, 0.896] |
+| | M-A | 0.651 | – | 0.692 [0.673, 0.713] |
+| | M-A′ | 0.664 | 0.641 | 0.690 [0.668, 0.711] |
+| | M-B | 0.931 | 0.929 | **0.935 [0.928, 0.942]** |
+
+Rehearsal and validation periods differ for scenario B (validation mode and rehearsal both score May – June 2026). Other test metrics: M-A ROC-AUC 0.833, F1 0.616 (precision 0.540, recall 0.718) at the validation threshold, Brier 0.1239; M-B ROC-AUC 0.942, F1 0.852 (precision 0.903, recall 0.807), Brier 0.0790; B3 F1 0.811.
+
+**Paired differences on the test period (all conclusions of the rehearsal hold).**
+
+| Comparison | PR-AUC difference [95% CI] | Reading |
+| --- | --- | --- |
+| M-A − B2 | +0.084 [+0.072, +0.097] | The day-ahead model beats the logistic baseline |
+| M-B − M-A′ | +0.245 [+0.228, +0.263] | Effect of the previous-stop information |
+| M-B − B3 | +0.051 [+0.045, +0.057] | Gain over the simple rule |
+| M-A′ − M-A | −0.002 [−0.009, +0.004] | The training period makes no measurable difference |
+| B3 − B2 | +0.292 [+0.274, +0.312] | One previous-stop delay beats everything known the day before |
+
+**Sanity checks.** Test scores lie in the range of validation and rehearsal, slightly above them (M-A +0.026 to +0.032 PR-AUC, M-B +0.004 to +0.006); the test period has a slightly higher delay rate and no winter. Scenario A ROC-AUC 0.833 (alarm limit 0.95). Calibration error 0.011 (M-A) and 0.010 (M-B). No feature has more than 5% of the test rows outside the range seen in training (`reports/shap_test.md`): the temperature gap of the validation models is closed by the refit, as expected.
+
+**Sensitivity checks (M-A, test).** Cancelled departures counted as delayed: PR-AUC 0.631, ROC-AUC 0.823. Departures without timetable record included: delay rate 25.0%, PR-AUC 0.645, ROC-AUC 0.836. Neither exclusion flatters the model.
+
+**Operating points per service (P1, test).** At the overall threshold M-A reaches recall 1.5% on the 20,751 regional departures. With the per-service threshold fixed on validation (0.120): precision 15.6%, recall 41.6%, F1 0.226; the 5% of regional departures with the highest scores are delayed 23.7% of the time (average 8.6%). Over all departures the per-service thresholds give F1 0.549 against 0.616 with the single threshold.
+
+**Error analysis (test, `reports/error_analysis_test.md`).**
+- Inside a service: M-A ROC-AUC 0.719 for long-distance trains (B2 0.611), 0.696 for night trains (0.658), 0.657 for regional trains (0.619). For regional trains PR-AUC is 0.159 at a base rate of 0.086; recall at the overall threshold is 0 for 7 of the 11 regional lines and at most 4.4%.
+- By month the mean prediction follows the observed rate within 1.2 points (July 26.6% against 26.6%; October 20.1% against 21.3%): no month like January 2026, but the test period has no winter (limitation; rehearsal scores cover January – June).
+- Scenario B by service, PR-AUC M-A′ / B3 / M-B: long-distance 0.683 / 0.928 / 0.944; night 0.857 / 0.939 / 0.966; regional 0.153 / 0.634 / 0.727.
+- Rule against model: with 6–9 minutes of delay at the previous stop the rule B3 is right in 41.9% of the cases, M-B in 70.9% (957 against 480 errors among 1,648 departures); with 10–19 minutes 79.3% against 89.9%. Below 6 minutes they are equal. As on validation, the gain of M-B comes from moderately late trains.
+- Confusion matrices: M-A 5,279 hits, 2,070 missed delays, 4,502 false alarms; M-B 4,827 / 1,158 / 521; B3 5,084 / 901 / 1,475. M-B trades recall for precision compared with the rule (fewer false alarms, more missed delays) at its validation threshold.
+- The largest errors of M-A are again missed delays of usually punctual regional trains, many of them 6–8 minutes late.
+
+**SHAP (test, `reports/shap_test.md`).** M-A: `hist_rate_service_hour` 20.1%, `hist_rate_route` 17.0%, `dwell_min` 10.3%; groups: timetable 54.4%, history 38.0%, weather 5.8%, calendar 1.8%. M-B: `prev_delay` 50.9%, `prev_delay_2` 8.4%, `dwell_min` 7.7%; previous-stop features together 63.8%. Same picture as on validation.
+
+**Report.** Results (tables above, operating points, SHAP), Discussion (regional trains, no winter in the test period, limits of the day-ahead scenario).
+
 ---
 
 ## Pipeline and checks so far
@@ -626,10 +672,10 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 | Clean | `src/02_clean.py`, `src/sql/02_clean.sql` | `data/processed/wuerzburg_clean.parquet`, `wuerzburg_prev_stops.parquet`; `reports/checks/cleaning_counts.csv`, `through_train_counts.csv`, `service_counts.csv` (modelling rows per split and service, added 11 Nov 2026 for the Data section) |
 | Enrich | `src/03_enrich.py`, `reference/school_holidays_bavaria.csv` | `data/processed/weather_hourly.parquet`, `calendar_daily.parquet`; `reports/checks/enrichment_summary.csv` |
 | Features | `src/04_features.py`, `src/sql/04_features.sql`, `src/sql/04_features_b.sql` | `data/processed/features_a.parquet`, `features_b.parquet`; `reports/checks/feature_summary.csv` |
-| Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (modes: validation, `--rehearsal`, `--final`) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablation, sanity checks; 1,000 day resamples); `reports/checks/tuning_*.csv` |
+| Evaluation code, baselines and LightGBM | `src/evaluate.py`, `src/baselines.py`, `src/models.py`, `src/05_train.py` (modes: validation, `--rehearsal`, `--final`) | `reports/results_validation.md` (B0–B3, M-A, M-A′, M-B, weather ablations, sanity checks; 1,000 day resamples); `reports/results_rehearsal.md`; **`reports/results.md` (final run, 13 Nov 2026)**; `reports/final_run.json`; `models/`; `reports/checks/tuning_*.csv`, `thresholds_*.json` |
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
-| Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
-| SHAP (extension) | `src/07_explain.py` | `reports/shap_validation.md`, `reports/checks/shap_importance_validation.csv`, `reports/figures/shap_importance_validation.png`, `shap_dependence_validation.png`; after the final run `--set test` |
+| Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_{validation,rehearsal,test}.md`, `reports/checks/error_slices_*.csv`, `reports/figures/errors_*.png` |
+| SHAP (extension) | `src/07_explain.py` | `reports/shap_validation.md`, `reports/checks/shap_importance_validation.csv`, `reports/figures/shap_importance_validation.png`, `shap_dependence_validation.png`; the same files with `_test` for the final models (13 Nov 2026) |
 | Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py` | 151 passing (13 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 

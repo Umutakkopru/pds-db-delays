@@ -175,16 +175,16 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] Weather ablation on validation (D21): +0.006 PR-AUC (11 Nov)
 - [x] Error-analysis and slice code, written and tried on validation (11 Nov): `src/06_error_analysis.py`
 - [x] Final-run code written, locked and rehearsed without the test period (11 Nov, D25)
-- [ ] Group confirms D1–D25; then refit on training + validation and **final run on the test set, once** (`python src/05_train.py --final`); results table
+- [x] (13 Nov, D26; decided by the preparing member, group confirmation to be recorded) Refit on training + validation and **final run on the test set, once** (`python src/05_train.py --final`); results table
 - [x] Write the Methodology section draft (11 Nov, `docs/report_methodology_section.md`: about 1,800 words, 3 tables; open points at its end, incl. the code review by a second member that the text claims)
-- [ ] **Freeze the minimum version**: no change to features, models or settings after this point
+- [x] **Freeze the minimum version** (13 Nov, with the final run): no change to features, models or settings after this point
 - **Result of the week:** `reports/results.md` with B0–B3, M-A, M-A′, M-B
 
 **Week 5 — extensions (until 8 Dec 2026)**
 
-- [ ] Error analysis on the test results: slices, confusion matrix, 20 largest errors grouped into failure types
+- [x] Error analysis on the test results (13 Nov, `reports/error_analysis_test.md`)
 - [x] Sensitivity checks coded and run on validation (11 Nov); they run again inside the final run (D9, D18)
-- [ ] SHAP global (M-A, M-B) on the test rows: code exists (`python src/07_explain.py --set test`, after the final run)
+- [x] SHAP global (M-A, M-A′, M-B) on the test rows (13 Nov, `reports/shap_test.md`)
 - [ ] Streamlit app level 1 (developed on validation rows, switched to the test table at the end), then deploy (level 2)
 - [ ] Write the Results section draft
 - [ ] **Freeze results and figures**
