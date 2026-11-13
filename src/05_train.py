@@ -4,7 +4,7 @@ Step 5: train and evaluate all models.
 Three modes share one code path (decision log D13, D17, D21):
 
   validation (default)  Fit on the training split, score the validation split.
-                        Used during development; also runs the weather ablation
+                        Used during development; also runs the weather ablations (M-A, M-A', M-B)
                         and the sanity checks.
   --rehearsal           The final procedure shifted one step back in time: the
                         validation period plays the test period, the end of the
@@ -72,6 +72,10 @@ M_A, M_A_NO_WEATHER = "M-A LightGBM", "M-A without weather"
 M_A_ON_B = "M-A LightGBM (A training period)"
 M_A_PRIME = "M-A′ LightGBM (A features, B period)"
 M_B = "M-B LightGBM (with earlier stops)"
+M_A_PRIME_NO_WEATHER, M_B_NO_WEATHER = "M-A′ without weather", "M-B without weather"
+NO_WEATHER = "without weather"          # ablation models: scored on validation only, never saved
+MIN_ROWS_OWN_THRESHOLD = 300            # a service with fewer validation rows keeps the overall threshold
+TOP_SHARES = (0.05, 0.10)               # "delay rate among the departures with the highest scores"
 SHORT_NAMES = {"B0": "b0", "B1": "b1", "B2": "b2", "B3": "b3", "M-A′": "m_a_prime", "M-A": "m_a", "M-B": "m_b"}
 SHUFFLE_REPEATS = 5
 
@@ -276,6 +280,54 @@ def sensitivity_table(eval_rows: pd.DataFrame, extra: pd.DataFrame, predictors: 
     return pd.DataFrame(rows)
 
 
+def service_thresholds(val: pd.DataFrame, val_score: np.ndarray, overall: float) -> dict[str, float]:
+    """
+    One class threshold per service, chosen on validation rows (max F1 inside the service).
+
+    A service with fewer than MIN_ROWS_OWN_THRESHOLD validation rows, or with only one class,
+    keeps the overall threshold.
+    """
+    out = {}
+    y = val[baselines.TARGET].to_numpy()
+    for service in sorted(val["service"].unique()):
+        mask = (val["service"] == service).to_numpy()
+        enough = mask.sum() >= MIN_ROWS_OWN_THRESHOLD and 0 < y[mask].sum() < mask.sum()
+        out[service] = float(evaluate.best_f1_threshold(y[mask], val_score[mask])) if enough else float(overall)
+    return out
+
+
+def operating_point_table(rows: pd.DataFrame, score: np.ndarray, overall: float, per_service: dict[str, float]) -> pd.DataFrame:
+    """
+    Class metrics per service at the overall threshold and at the service's own threshold,
+    and the delay rate among the departures with the highest scores (TOP_SHARES).
+
+    The last row applies the per-service thresholds to all rows together. A service that is
+    not in per_service (unseen on validation) uses the overall threshold.
+    """
+    y = rows[baselines.TARGET].to_numpy()
+    service = rows["service"].to_numpy()
+    own = np.array([per_service.get(s, overall) for s in service])
+
+    def line(label: str, mask: np.ndarray, threshold_text: str) -> dict:
+        at_overall = evaluate.class_metrics(y[mask], score[mask], overall)
+        flagged = (score[mask] >= own[mask]).astype(float)          # 1.0 where the own threshold calls "delayed"
+        at_own = evaluate.class_metrics(y[mask], flagged, 0.5)
+        order = np.argsort(-score[mask], kind="stable")
+        out = {"Service": label, "Rows": f"{mask.sum():,}", "Delayed": f"{100 * y[mask].mean():.1f}%",
+               "Overall threshold: P / R / F1": f"{at_overall['precision']:.3f} / {at_overall['recall']:.3f} / {at_overall['f1']:.3f}",
+               "Own threshold": threshold_text,
+               "Own threshold: P / R / F1": f"{at_own['precision']:.3f} / {at_own['recall']:.3f} / {at_own['f1']:.3f}"}
+        for share in TOP_SHARES:
+            k = max(1, int(round(share * mask.sum())))
+            few = mask.sum() < MIN_ROWS_OWN_THRESHOLD      # a handful of rows says nothing
+            out[f"Delayed in top {share:.0%}"] = "–" if few else f"{100 * y[mask][order[:k]].mean():.1f}%"
+        return out
+
+    table = [line(s, service == s, f"{per_service.get(s, overall):.3f}") for s in sorted(set(service))]
+    table.append(line("All departures", np.ones(len(rows), dtype=bool), "per service"))
+    return pd.DataFrame(table)
+
+
 def to_markdown(df: pd.DataFrame) -> str:
     lines = ["| " + " | ".join(df.columns) + " |", "| " + " | ".join("---" for _ in df.columns) + " |"]
     lines += ["| " + " | ".join(str(v) for v in row) + " |" for row in df.itertuples(index=False)]
@@ -291,7 +343,7 @@ def save_predictions(rows: pd.DataFrame, scores: dict, path: Path) -> None:
     """Write id, day, outcome and one score column per model (column name = short model name)."""
     out = rows[["id", "service_date", baselines.TARGET]].copy()
     for name, values in scores.items():
-        if name == M_A_NO_WEATHER:
+        if NO_WEATHER in name:
             continue
         short = next(v for k, v in SHORT_NAMES.items() if name.startswith(k))
         out[short] = np.asarray(values, dtype=float)
@@ -368,9 +420,13 @@ def run(mode: str, n_resamples: int) -> None:
     thresholds_b = {n: evaluate.best_f1_threshold(y_val_b, s) for n, s in val_scores_b.items()}
     thresholds_b[B3] = float(config.DELAY_THRESHOLD_MIN)
 
+    # operating points per service (P1): thresholds from validation rows, applied to the scored rows
+    per_service = service_thresholds(a["val"], np.asarray(dev[M_A]["val_proba"]), thresholds_a[M_A])
+
     threshold_file(mode).write_text(json.dumps({
         "b2": thresholds_a[B2], "m_a": thresholds_a[M_A], "b3": thresholds_b[B3],
         "m_a_prime": thresholds_b[M_A_PRIME], "m_b": thresholds_b[M_B],
+        "m_a_per_service": per_service,
     }, indent=2), encoding="utf-8")
 
     # ---- models that are scored: the development models, or the refit on training + validation
@@ -402,6 +458,7 @@ def run(mode: str, n_resamples: int) -> None:
                                   fixed_threshold=thresholds_a if final_like else None)
     diff_a = difference_table(boot_a, pairs_a)
     save_predictions(eval_a, scores, prediction_file(mode, "A"))
+    operating = operating_point_table(eval_a, np.asarray(scores[M_A]), thresholds_a[M_A], per_service)
 
     # ---- scenario B rows: through trains with an earlier stop
     y_b = eval_b[baselines.TARGET].to_numpy()
@@ -410,11 +467,18 @@ def run(mode: str, n_resamples: int) -> None:
     scores_b[M_A_ON_B] = models.predict(fitted[M_A], eval_b, features_a)
     scores_b[M_A_PRIME] = models.predict(fitted[M_A_PRIME], eval_b, features_a)
     scores_b[M_B] = models.predict(fitted[M_B], eval_b, features_b)
+    pairs_b = [(B3, B2), (M_A_PRIME, M_A_ON_B), (M_B, M_A_PRIME), (M_B, B3)]
+    if not final_like:
+        # weather ablation for the scenario B models (P2): same settings, weather features left out
+        for full, ablated in ((M_A_PRIME, M_A_PRIME_NO_WEATHER), (M_B, M_B_NO_WEATHER)):
+            kept = [f for f in dev[full]["features"] if f not in features_config.WEATHER_FEATURES]
+            scores_b[ablated] = models.fit(b["train"], b["val"], kept, dev[full]["params"])["val_proba"]
+            pairs_b.append((full, ablated))
     table_b, boot_b = score_table(
         y_b, eval_b["service_date"].to_numpy(), scores_b, n_resamples,
         fixed_threshold=thresholds_b if final_like else {B3: thresholds_b[B3]}, not_a_probability=(B3,),
     )
-    diff_b = difference_table(boot_b, [(B3, B2), (M_A_PRIME, M_A_ON_B), (M_B, M_A_PRIME), (M_B, B3)])
+    diff_b = difference_table(boot_b, pairs_b)
     save_predictions(eval_b, scores_b, prediction_file(mode, "B"))
 
     # ---- sensitivity checks (D9, D18) on scenario A
@@ -477,6 +541,18 @@ def run(mode: str, n_resamples: int) -> None:
         "",
         to_markdown(diff_b),
         "",
+        "## M-A: operating points per service",
+        "",
+        "The overall threshold maximises F1 over all departures; with it, M-A flags almost no regional train, "
+        "because regional trains are delayed far less often than long-distance trains. This table shows in addition "
+        "what a threshold per service gives (chosen inside each service on the validation rows; services with fewer "
+        f"than {MIN_ROWS_OWN_THRESHOLD} validation rows keep the overall threshold of {thresholds_a[M_A]:.3f}), and how "
+        "often the departures with the highest scores are delayed. P / R / F1 = precision / recall / F1. "
+        + ("The thresholds were fixed before these rows were scored." if final_like else
+           "In this mode the thresholds are chosen on the scored rows themselves, so the numbers are optimistic."),
+        "",
+        to_markdown(operating),
+        "",
         "## Sensitivity checks (scenario A)",
         "",
         "The same models scored once more with rows that the main evaluation excludes (D9, D18). These rows are "
@@ -505,7 +581,7 @@ def run(mode: str, n_resamples: int) -> None:
                             "rows_a": len(eval_a), "rows_b": len(eval_b), "thresholds": thresholds})
 
     for title, table in (("Scenario A", table_a), ("", diff_a), ("Scenario B rows", table_b), ("", diff_b),
-                         ("Sensitivity", sensitivity), ("Chosen settings", chosen)):
+                         ("M-A operating points per service", operating), ("Sensitivity", sensitivity), ("Chosen settings", chosen)):
         print(("\n=== " + title + " ===\n" if title else "\n") + table.to_string(index=False))
     if checks:
         print("\n" + "\n".join(checks))

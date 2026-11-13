@@ -561,6 +561,12 @@ Not decisions yet. They answer three weaknesses seen on validation; the list for
 - **P2 Weather ablation for the scenario B models in the script.** Evidence: SHAP findings above (M-B 0.9314 with weather, 0.9303 without; ad hoc). Proposal: features stay; the ablation moves into `src/05_train.py` so that the number is reproducible.
 - **P3 Winter.** The test period has no winter and stays as it is (D4). Proposal: report the rehearsal scores (January – June 2026, unbiased, D25) next to the test scores.
 
+**Implemented (13 Nov 2026; still proposals until the group decides).** P1 and P2 are now part of `src/05_train.py`, so the numbers above no longer depend on ad hoc runs.
+
+- **P1.** `service_thresholds()` chooses one threshold per service on the validation rows (services with fewer than 300 validation rows keep the overall threshold); they are saved in `reports/checks/thresholds_*.json` (`m_a_per_service`) and applied to the scored rows by `operating_point_table()`. Every results file has a section "M-A: operating points per service". Rehearsal (`reports/results_rehearsal.md`, thresholds fixed before the rows were scored): regional trains precision 0.163, recall 0.405, F1 0.233 at their own threshold 0.109 (overall threshold: recall 0.006); top 5% of regional departures 21.3% delayed, top 10% 19.4%; all departures with per-service thresholds F1 0.531 against 0.591. These equal the ad hoc numbers above. The main tables, intervals and paired differences are unchanged (file comparison before and after).
+- **P2.** In validation mode the scenario B models are fitted once more without the six weather features (`reports/results_validation.md`): M-B 0.931 with, 0.930 without, difference +0.001 [−0.000, +0.002], interval includes zero; M-A′ 0.664 with, 0.646 without, +0.019 [+0.012, +0.025]. Weather is not needed by M-B and helps M-A′ on validation; the features stay.
+- Tests: `tests/test_final_run.py` (thresholds come from validation rows only, small services keep the overall threshold, the ablation models are never saved with the predictions). 151 tests pass.
+
 ## D25 Final run: one command, a lock and a rehearsal (11 Nov 2026; proposal)
 
 **Question.** How is "the test period is used once" guaranteed, and how do we know the final code works before it is used?
@@ -607,7 +613,7 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
 | Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_validation.md`, `reports/checks/error_slices_validation.csv`, `reports/figures/errors_*_validation.png` |
 | SHAP (extension) | `src/07_explain.py` | `reports/shap_validation.md`, `reports/checks/shap_importance_validation.csv`, `reports/figures/shap_importance_validation.png`, `shap_dependence_validation.png`; after the final run `--set test` |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py` | 147 passing (11 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py` | 151 passing (13 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

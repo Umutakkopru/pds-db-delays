@@ -50,8 +50,8 @@ They answer weaknesses seen on validation. None changes a model or a feature; P1
 
 | # | Weakness | Proposal | Group |
 | --- | --- | --- | --- |
-| P1 | With one overall threshold, M-A almost never flags a regional train (recall 0.6% on regional trains), although it does rank them: the 5% of regional departures with the highest score are delayed 21% of the time against 8.6% on average | Keep the overall threshold as the main operating point. Report in addition: precision, recall and F1 per service with a threshold chosen per service on validation (regional: recall 41%, precision 16%), and the delay rate of the top 5% and 10% per service. To be coded before the final run | |
-| P2 | The scenario B models are tuned by models that never saw a day above 21 °C; weather adds only about 0.001 PR-AUC to M-B | Keep the features. Move the scenario B weather ablation into the training script so that the number is reproducible and reported | |
+| P1 | With one overall threshold, M-A almost never flags a regional train (recall 0.6% on regional trains), although it does rank them: the 5% of regional departures with the highest score are delayed 21% of the time against 8.6% on average | Keep the overall threshold as the main operating point. Report in addition: precision, recall and F1 per service with a threshold chosen per service on validation (regional: recall 41%, precision 16%), and the delay rate of the top 5% and 10% per service. Coded on 13 Nov 2026 as an extra section of the results file; if the group rejects it, the section is removed | |
+| P2 | The scenario B models are tuned by models that never saw a day above 21 °C; weather adds only about 0.001 PR-AUC to M-B | Keep the features. Done on 13 Nov 2026: the ablation is part of the training script (M-B +0.001 PR-AUC with weather, interval includes zero) | |
 | P3 | The test period has no winter | Report the rehearsal scores (January – June 2026, with winter, unbiased) next to the test scores, and say so in the Discussion. No change of the test period | |
 
 ## How the result is recorded

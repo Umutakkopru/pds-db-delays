@@ -50,6 +50,18 @@ Paired differences (same day resamples): M-A′ − M-A is the effect of the tra
 | M-B LightGBM (with earlier stops) − B3 previous-stop delay | pr_auc | +0.052 [+0.042, +0.063] | yes |
 | M-B LightGBM (with earlier stops) − B3 previous-stop delay | roc_auc | +0.030 [+0.025, +0.036] | yes |
 
+## M-A: operating points per service
+
+The overall threshold maximises F1 over all departures; with it, M-A flags almost no regional train, because regional trains are delayed far less often than long-distance trains. This table shows in addition what a threshold per service gives (chosen inside each service on the validation rows; services with fewer than 300 validation rows keep the overall threshold of 0.306), and how often the departures with the highest scores are delayed. P / R / F1 = precision / recall / F1. The thresholds were fixed before these rows were scored.
+
+| Service | Rows | Delayed | Overall threshold: P / R / F1 | Own threshold | Own threshold: P / R / F1 | Delayed in top 5% | Delayed in top 10% |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| long_distance | 15,248 | 43.7% | 0.512 / 0.866 / 0.644 | 0.314 | 0.517 / 0.853 / 0.644 | 75.1% | 70.8% |
+| night | 1,384 | 67.7% | 0.760 / 0.951 / 0.845 | 0.485 | 0.810 / 0.889 / 0.848 | 97.1% | 97.8% |
+| other | 16 | 50.0% | 0.467 / 0.875 / 0.609 | 0.306 | 0.467 / 0.875 / 0.609 | – | – |
+| regional | 29,345 | 8.6% | 0.471 / 0.006 / 0.013 | 0.109 | 0.163 / 0.405 / 0.233 | 21.3% | 19.4% |
+| All departures | 45,993 | 22.0% | 0.535 / 0.660 / 0.591 | per service | 0.413 / 0.745 / 0.531 | 76.8% | 67.4% |
+
 ## Sensitivity checks (scenario A)
 
 The same models scored once more with rows that the main evaluation excludes (D9, D18). These rows are never used for fitting. A cancelled departure counts as delayed here.
