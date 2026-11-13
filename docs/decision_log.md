@@ -41,6 +41,7 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
 | D24 | Feature tables | 21 scenario A features (timetable, calendar, weather, 28-day history), 4 more for scenario B (previous stops) | Time-travel test; single-feature ROC-AUC at most 0.80 | 4 |
 | D25 | Final run | One code path with three modes; lock file; rehearsal one step back in time | Rehearsal: validation optimism 0.002–0.023 PR-AUC; conclusions unchanged | 4, 5 |
+| D26 | Scope closed before the final run | P1–P3 adopted; train-number history key and neighbouring-state school holidays dropped; then the single final run | Error analysis and SHAP on validation | 4, 6 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -595,6 +596,22 @@ PR-AUC. The optimism of the validation numbers is small (0.002–0.006) except f
 **Alternatives considered.** A separate script for the final run (two code paths that can drift apart); no rehearsal (the final code would run for the first time on the test period).
 
 **Report.** Methodology (evaluation design), Results, Discussion (limitations).
+
+## D26 Scope closed before the final run (13 Nov 2026)
+
+**Question.** Nothing may change after the test period has been scored. What is still added, and what is dropped, before the single final run?
+
+**Decision.**
+- **Adopted:** P1 (operating points per service, reported next to the overall threshold), P2 (weather ablation for the scenario B models in the script), P3 (rehearsal scores reported next to the test scores).
+- **Dropped:** the train-number history key with its fallback chain (D14, D22). The largest errors of M-A on validation are regional departures whose history rate is already a few percent; a finer history key would not separate them. Neighbouring states' school holidays (D22): the three calendar features together carry 1.8% of M-A's mean |SHAP|.
+- **Unchanged:** features (21 and 25), models, the grid of 12 settings, the splits and the evaluation protocol as described in D1–D25.
+- The final run follows directly: `python src/05_train.py --final`, then `python src/06_error_analysis.py --set test` and `python src/07_explain.py --set test`.
+
+**Who decided.** The member who prepared D1–D25 decided to proceed on this basis on 13 Nov 2026. The group meeting with the decision sheet (`docs/group_decision_sheet.md`) had not been recorded at that time; a later confirmation or objection by the group is added here with its date. An objection cannot change the test results any more: it would be reported as a limitation.
+
+**Alternatives considered.** Waiting for a recorded group meeting (delays everything that depends on the test results); building the train-number key first (more code and one more tuning decision for an effect the error analysis does not promise).
+
+**Report.** Methodology (what was fixed before the test run), Discussion (limitations, next steps: finer history keys).
 
 ---
 

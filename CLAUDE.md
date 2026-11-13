@@ -78,6 +78,7 @@ Proposed plan (to be agreed by the group): minimum version (baselines, LightGBM,
 | D23 | Weather from Open-Meteo downloaded in UTC and converted to local time (its own "Europe/Berlin" option ignores summer time); Bavarian public holidays incl. 15 Aug, school holidays from the official list, bridge days |
 | D24 | Feature tables: 21 scenario A features (timetable, calendar, weather, 28-day history per service × hour, route and overall), plus 4 previous-stop features for scenario B; destination is the route group of long-distance trains |
 | D25 | Final run = `python src/05_train.py --final`: one code path with validation and rehearsal modes, lock file `reports/final_run.json`, thresholds from validation, sensitivity checks included |
+| D26 | Scope closed before the final run (13 Nov): P1–P3 adopted; train-number history key and neighbouring-state school holidays dropped; decided by the preparing member, group confirmation to be added when recorded |
 
 ## Problem definition
 
