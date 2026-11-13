@@ -39,6 +39,8 @@ Scored on 8,020 departures on 61 days, 35.0% delayed. B1, B2 and M-A are the sce
 | M-A LightGBM (A training period) | 0.651 [0.615, 0.683] | 0.789 [0.774, 0.805] | 0.335 | 0.649 | 0.583 | 0.733 | 0.723 | 0.485 | 0.1769 |
 | M-A′ LightGBM (A features, B period) | 0.664 [0.632, 0.694] | 0.794 [0.778, 0.810] | 0.337 | 0.655 | 0.585 | 0.744 | 0.726 | 0.596 | 0.1724 |
 | M-B LightGBM (with earlier stops) | 0.931 [0.919, 0.941] | 0.942 [0.933, 0.949] | 0.428 | 0.853 | 0.893 | 0.817 | 0.902 | 0.851 | 0.0749 |
+| M-A′ without weather | 0.646 [0.612, 0.677] | 0.785 [0.767, 0.803] | 0.310 | 0.647 | 0.575 | 0.740 | 0.718 | 0.567 | 0.1763 |
+| M-B without weather | 0.930 [0.918, 0.941] | 0.940 [0.932, 0.948] | 0.397 | 0.851 | 0.885 | 0.819 | 0.900 | 0.850 | 0.0755 |
 
 Paired differences (same day resamples): M-A′ − M-A is the effect of the training period, M-B − M-A′ the effect of the earlier-stop features, M-B − B3 the gain over the simple rule.
 
@@ -52,6 +54,22 @@ Paired differences (same day resamples): M-A′ − M-A is the effect of the tra
 | M-B LightGBM (with earlier stops) − M-A′ LightGBM (A features, B period) | roc_auc | +0.148 [+0.135, +0.161] | yes |
 | M-B LightGBM (with earlier stops) − B3 previous-stop delay | pr_auc | +0.055 [+0.045, +0.066] | yes |
 | M-B LightGBM (with earlier stops) − B3 previous-stop delay | roc_auc | +0.032 [+0.027, +0.038] | yes |
+| M-A′ LightGBM (A features, B period) − M-A′ without weather | pr_auc | +0.019 [+0.012, +0.025] | yes |
+| M-A′ LightGBM (A features, B period) − M-A′ without weather | roc_auc | +0.009 [+0.004, +0.014] | yes |
+| M-B LightGBM (with earlier stops) − M-B without weather | pr_auc | +0.001 [-0.000, +0.002] | no |
+| M-B LightGBM (with earlier stops) − M-B without weather | roc_auc | +0.001 [-0.000, +0.003] | no |
+
+## M-A: operating points per service
+
+The overall threshold maximises F1 over all departures; with it, M-A flags almost no regional train, because regional trains are delayed far less often than long-distance trains. This table shows in addition what a threshold per service gives (chosen inside each service on the validation rows; services with fewer than 300 validation rows keep the overall threshold of 0.289), and how often the departures with the highest scores are delayed. P / R / F1 = precision / recall / F1. In this mode the thresholds are chosen on the scored rows themselves, so the numbers are optimistic.
+
+| Service | Rows | Delayed | Overall threshold: P / R / F1 | Own threshold | Own threshold: P / R / F1 | Delayed in top 5% | Delayed in top 10% |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| long_distance | 15,248 | 43.7% | 0.509 / 0.874 / 0.643 | 0.335 | 0.554 / 0.780 / 0.648 | 76.2% | 71.7% |
+| night | 1,384 | 67.7% | 0.757 / 0.958 / 0.846 | 0.347 | 0.778 / 0.947 / 0.854 | 100.0% | 98.6% |
+| other | 16 | 50.0% | 0.467 / 0.875 / 0.609 | 0.289 | 0.467 / 0.875 / 0.609 | – | – |
+| regional | 29,345 | 8.6% | 0.393 / 0.004 / 0.009 | 0.120 | 0.171 / 0.375 / 0.235 | 22.6% | 19.4% |
+| All departures | 45,993 | 22.0% | 0.532 / 0.666 / 0.591 | per service | 0.438 / 0.695 / 0.538 | 76.8% | 69.6% |
 
 ## Sensitivity checks (scenario A)
 

@@ -152,3 +152,65 @@ def test_excluded_rows_never_feed_history_of_sensitivity_rows():
     assert list(out["id"]) == ["cancelled"] and out.loc[0, "delayed"] == 1
     assert out.loc[0, "hist_rate_route"] == pytest.approx(0.2)       # 2 of 10 delayed on each of the 28 window days
     assert pd.isna(out.loc[0, "hist_rate_service_hour"])              # no modelling departure at 9 o'clock: no rate
+
+
+# ----------------------------------------------------------------- operating points per service (P1), ablations (P2)
+
+def _service_rows() -> tuple[pd.DataFrame, np.ndarray]:
+    """Regional trains are rarely late and get low scores; long-distance trains are often late."""
+    rows = pd.DataFrame({
+        "service": ["regional"] * 6 + ["long_distance"] * 6 + ["other"],
+        "delayed": [0, 0, 0, 0, 1, 1,  0, 0, 1, 1, 1, 1,  1],
+    })
+    score = np.array([0.02, 0.03, 0.04, 0.05, 0.20, 0.25,  0.30, 0.35, 0.60, 0.70, 0.80, 0.90,  0.50])
+    return rows, score
+
+
+def test_service_thresholds_come_from_validation_rows_and_small_services_keep_the_overall_one(monkeypatch):
+    monkeypatch.setattr(train_step, "MIN_ROWS_OWN_THRESHOLD", 5)
+    val, score = _service_rows()
+    thresholds = train_step.service_thresholds(val, score, overall=0.6)
+    assert thresholds["regional"] == pytest.approx(0.20)        # separates the two late regional trains
+    assert thresholds["long_distance"] == pytest.approx(0.60)
+    assert thresholds["other"] == 0.6                           # one row only: overall threshold
+
+
+def test_operating_point_table_applies_the_given_thresholds(monkeypatch):
+    monkeypatch.setattr(train_step, "MIN_ROWS_OWN_THRESHOLD", 5)
+    rows, score = _service_rows()
+    table = train_step.operating_point_table(rows, score, overall=0.6, per_service={"regional": 0.20, "long_distance": 0.60})
+    table = table.set_index("Service")
+    # overall threshold 0.6: no regional train is flagged; own threshold 0.2: both late ones, no false alarm
+    assert table.loc["regional", "Overall threshold: P / R / F1"].split(" / ")[1] == "0.000"
+    assert table.loc["regional", "Own threshold: P / R / F1"] == "1.000 / 1.000 / 1.000"
+    assert table.loc["other", "Own threshold"] == "0.600"       # not in per_service: overall threshold
+    assert table.loc["other", "Delayed in top 5%"] == "–"       # too few rows to say anything
+    assert table.loc["All departures", "Rows"] == "13"
+    # changing the outcomes of the scored rows must not move any threshold
+    flipped = rows.assign(delayed=1 - rows["delayed"])
+    again = train_step.operating_point_table(flipped, score, 0.6, {"regional": 0.20, "long_distance": 0.60}).set_index("Service")
+    assert list(again["Own threshold"]) == list(table["Own threshold"])
+
+
+def test_ablation_models_are_not_saved_with_the_predictions(tmp_path):
+    rows = pd.DataFrame({"id": ["a", "b"], "service_date": pd.to_datetime(["2026-01-01", "2026-01-02"]), "delayed": [0, 1]})
+    path = tmp_path / "predictions.parquet"
+    train_step.save_predictions(rows, {train_step.M_B: np.array([0.1, 0.9]),
+                                       train_step.M_B_NO_WEATHER: np.array([0.5, 0.5]),
+                                       train_step.M_A_PRIME_NO_WEATHER: np.array([0.5, 0.5])}, path)
+    saved = pd.read_parquet(path)
+    assert list(saved.columns) == ["id", "service_date", "delayed", "m_b"]
+    assert list(saved["m_b"]) == [0.1, 0.9]                     # not overwritten by the ablation model
+
+
+def test_saved_thresholds_include_the_per_service_ones():
+    import json
+    for mode in ("validation", "rehearsal"):
+        path = train_step.threshold_file(mode)
+        if not path.exists():
+            pytest.skip("run src/05_train.py first")
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        per_service = saved["m_a_per_service"]
+        assert {"regional", "long_distance"} <= set(per_service)
+        assert per_service["regional"] < saved["m_a"]           # rare delays need a lower threshold
+        assert all(0 < t < 1 for t in per_service.values())
