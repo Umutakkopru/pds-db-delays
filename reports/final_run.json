@@ -1,0 +1,13 @@
+{
+  "finished": "2026-11-13T18:57:48",
+  "commit": "2c09d2c3a25c53da8a3870df7ff5a762c0c173ca",
+  "results": "results.md",
+  "resamples": 1000,
+  "rows_a": 31956,
+  "rows_b": 15898,
+  "thresholds": {
+    "M-A LightGBM": 0.28917214606445957,
+    "M-A\u2032 LightGBM (A features, B period)": 0.33712058241346965,
+    "M-B LightGBM (with earlier stops)": 0.42808989278655274
+  }
+}
