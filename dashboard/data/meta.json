@@ -1,4 +1,21 @@
 {
+  "performance": {
+    "A": {
+      "rows": 31956,
+      "base_rate": 0.22997246213543623,
+      "precision": 0.539719865044474,
+      "recall": 0.7183290243570554
+    },
+    "B": {
+      "rows": 15898,
+      "base_rate": 0.37646244810668006,
+      "precision": 0.9025804038893044,
+      "recall": 0.8065162907268171
+    }
+  },
+  "training_rows": 198377,
+  "training_period": "July 2024 and June 2026",
+  "test_period": "July to October 2026",
   "first_day": "2026-07-01",
   "last_day": "2026-10-31",
   "grid_period": [

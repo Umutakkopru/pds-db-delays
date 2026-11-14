@@ -8,6 +8,7 @@ from datetime import date
 
 import streamlit as st
 
+from about import how_it_works
 from predictor import HOURS, WEEKDAYS, Query, load_predictor
 from ui import charts, components
 
@@ -21,6 +22,9 @@ st.html(components.header())
 
 if predictor.is_demo:
     st.warning("Demo mode: the trained model is not connected yet. All numbers on this page are placeholders.", icon="⚠️")
+
+with st.expander("How does this work?", icon=":material/help:"):
+    st.markdown(how_it_works(predictor.facts() if hasattr(predictor, "facts") else None, predictor.is_demo))
 
 lines = predictor.lines()
 # The model-backed predictor answers for days of the test period only (its lookup tables end there).

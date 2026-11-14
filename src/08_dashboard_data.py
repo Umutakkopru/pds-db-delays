@@ -43,6 +43,7 @@ import duckdb
 import pandas as pd
 
 import config
+import evaluate
 import features_config
 
 train_step = importlib.import_module("05_train")          # module names start with a digit
@@ -199,7 +200,19 @@ def build_meta(marker: dict, test: tuple[str, str], lines: pd.DataFrame) -> dict
     a = pd.read_parquet(PROCESSED / "predictions_test_a.parquet")
     b = pd.read_parquet(PROCESSED / "predictions_test_b.parquet")
     last_day = (pd.Timestamp(test[1]) - pd.Timedelta(days=1)).date().isoformat()
+    thresholds = json.loads(train_step.threshold_file("final").read_text(encoding="utf-8"))
+    performance = {}
+    for scenario, rows, column in (("A", a, "m_a"), ("B", b, "m_b")):
+        y = rows["delayed"].to_numpy()
+        at = evaluate.class_metrics(y, rows[column].to_numpy(), thresholds[column])
+        performance[scenario] = {"rows": int(len(rows)), "base_rate": float(y.mean()),
+                                 "precision": at["precision"], "recall": at["recall"]}
+    fitted_on = duckdb.sql(f"SELECT COUNT(*) FROM {rel('features_a.parquet')} WHERE split_a IN ('train', 'val')").fetchone()[0]
     return {
+        # for the page's "How does this work?" text: class metrics of the final run at the validation thresholds
+        "performance": performance,
+        "training_rows": int(fitted_on),
+        "training_period": "July 2024 and June 2026", "test_period": "July to October 2026",
         "first_day": test[0], "last_day": last_day,
         "grid_period": [config.SPLITS["A"]["train"][0], last_day],
         "final_run": {"finished": marker["finished"], "commit": marker["commit"]},

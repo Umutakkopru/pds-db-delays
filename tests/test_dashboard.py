@@ -185,3 +185,28 @@ def test_step_08_is_refused_before_the_final_run(tmp_path, monkeypatch):
         step.require_final_run()
     assert step.line_label("regional", "RB53", "Bamberg", False) == "RB53 to Bamberg (starts at Würzburg)"
     assert step.line_label("long_distance", None, "München Hbf", True) == "ICE/IC to München Hbf"
+
+
+# ----------------------------------------------------------------- "How does this work?"
+
+@needs_dashboard
+def test_explanation_quotes_the_final_run_and_no_typed_numbers(model):
+    import about
+    facts = model.facts()
+    text = about.how_it_works(facts, is_demo=False)
+    saved = json.loads((config.CHECKS / "thresholds_test.json").read_text(encoding="utf-8"))
+    assert facts["performance"]["A"]["rows"] == 31_956 and facts["training_rows"] == 198_377
+    # the same class metrics as reports/results.md (M-A: precision 0.540, recall 0.718; M-B: 0.903, 0.807)
+    assert round(facts["performance"]["A"]["precision"], 3) == 0.540 and round(facts["performance"]["A"]["recall"], 3) == 0.718
+    assert round(facts["performance"]["B"]["precision"], 3) == 0.903 and round(facts["performance"]["B"]["recall"], 3) == 0.807
+    for expected in ("198,377", "31,956", "54 of 100", "72 of 100", "90 of 100", "81 of 100", "6 or more minutes late"):
+        assert expected in text
+    assert "Demo mode" not in text and saved["m_a"] > 0
+
+
+def test_explanation_in_demo_mode_and_without_facts():
+    import about
+    demo = about.how_it_works(None, is_demo=True)
+    assert "Demo mode" in demo and "of 100" not in demo
+    plain = about.how_it_works(None, is_demo=False)
+    assert "Demo mode" not in plain and "Two moments" in plain

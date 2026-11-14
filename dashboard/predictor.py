@@ -249,6 +249,10 @@ class ModelPredictor:
     def lines(self) -> list[str]:
         return list(self._lines)
 
+    def facts(self) -> dict:
+        """Row counts and test-period results for the page's explanation (from data/meta.json)."""
+        return {key: self._meta[key] for key in ("performance", "training_rows", "training_period", "test_period")}
+
     def scenario_for(self, query: Query) -> str:
         """B when a previous-stop delay is given and the line has a previous stop, else A."""
         return "B" if query.prev_stop_delay is not None and self._lines[query.line]["has_scenario_b"] else "A"

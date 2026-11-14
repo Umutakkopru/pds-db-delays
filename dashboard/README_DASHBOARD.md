@@ -56,6 +56,14 @@ returns exactly the scores of the final run (difference 0). A typical departure 
 departures of the same line, day and hour by 0.3 percentage points on average for M-A (95% under 1.4) and
 by 2.1 points for M-B (95% under 11.3; real trains differ in their stop-before-previous delay and timing).
 
+## "How does this work?" (added 14 Nov 2026)
+
+A collapsed section under the header explains the page in plain language: what is
+predicted, the two moments, how the model was built and checked, how good it is, how to
+read the page, and its limits. The text is in `about.py`; its numbers come from
+`data/meta.json` (`ModelPredictor.facts()`), so they change with the lookup tables and are
+never typed in. It uses Streamlit's own expander, so `ui/` is unchanged.
+
 ## Notes
 
 - Streamlit's HTML sanitizer removes inline SVG and any stylesheet containing `<`;
