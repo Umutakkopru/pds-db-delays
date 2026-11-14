@@ -81,7 +81,7 @@ python checks/data_quality_check.py  # duplicates, cancellations, collection gap
 | `reference/` | Small tracked tables with their sources (Bavarian school holidays) |
 | `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
 | `notebooks/` | EDA only, no pipeline logic (`01_eda.ipynb`: training and validation period, writes `reports/figures/eda_*.png`) |
-| `app/` | Streamlit dashboard (planned) |
+| `dashboard/` | Streamlit dashboard: `app.py`, model connection `predictor.py`, design in `ui/`, lookup tables in `data/` (see `dashboard/README_DASHBOARD.md`) |
 | `models/` | Final models M-A, M-A′, M-B (LightGBM text files with features, categories, setting and threshold) |
 | `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`), error analysis (`error_analysis_validation.md`), figures; final results table (planned) |
 | `data/` | Raw, interim and processed data (not in Git) |
