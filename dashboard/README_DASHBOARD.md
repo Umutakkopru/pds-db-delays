@@ -10,8 +10,8 @@ Without them it falls back to demo mode and says so.
 | Step | What | Status |
 |---|---|---|
 | 1 | Tokens + light/dark theme (`ui/tokens.py`, `.streamlit/config.toml`) | Done |
-| 2 | Layout: header, inputs, result card, route, explanation, heatmap, footer | Done, with placeholder numbers |
-| 3 | Charts bound to the palette (SHAP bars, heatmap) | Done, with placeholder numbers |
+| 2 | Layout: header, inputs, result card, route, explanation, heatmap | Done; one-screen redesign on 14 Nov 2026 (see below) |
+| 3 | Charts bound to the palette (SHAP bars, heatmap, risk through the day) | Done; heatmap and day profile in HTML/CSS since 14 Nov 2026 |
 | 4 | Motion: rolling counter + risk bar, route, staggered SHAP bars | Done |
 | 5 | Connect the trained model (`predictor.py`) | Done (14 Nov 2026): `ModelPredictor`, tests in `tests/test_dashboard.py` |
 | 6 | Polish: banded risk bar, vertical route on mobile, selected cell in the heatmap, calibration-note slot | Done |
@@ -58,21 +58,39 @@ by 2.1 points for M-B (95% under 11.3; real trains differ in their stop-before-p
 
 ## "How does this work?" (added 14 Nov 2026)
 
-A collapsed section under the header explains the page in plain language: what is
+A "How it works" button in the header opens a popover that explains the page in plain language: what is
 predicted, the two moments, how the model was built and checked, how good it is, how to
 read the page, and its limits. The text is in `about.py`; its numbers come from
 `data/meta.json` (`ModelPredictor.facts()`), so they change with the lookup tables and are
-never typed in. It uses Streamlit's own expander, so `ui/` is unchanged.
+never typed in. It uses Streamlit's own popover.
 
 ## Deploy on Streamlit Community Cloud (step 7)
 
 Prepared on 14 Nov 2026; tested in a clean Python 3.10 environment with only `dashboard/requirements.txt`, started from the repository root: real models load (no demo banner, 37 lines).
 
-- Community Cloud runs `streamlit run` from the repository root and takes the first `requirements.txt` it finds next to the entrypoint, then at the root. `dashboard/requirements.txt` therefore keeps the app's environment small (streamlit, plotly, lightgbm, pandas, pyarrow); the root `requirements.txt` is for the full pipeline.
+- Community Cloud runs `streamlit run` from the repository root and takes the first `requirements.txt` it finds next to the entrypoint, then at the root. `dashboard/requirements.txt` therefore keeps the app's environment small (streamlit, lightgbm, pandas, pyarrow); the root `requirements.txt` is for the full pipeline.
 - `packages.txt` at the repository root installs `libgomp1`, the OpenMP library LightGBM needs on Linux (Cloud reads `packages.txt` only at the root).
 - `dashboard/.streamlit/config.toml` sits next to the entrypoint, which Cloud accepts as the app's own configuration.
 - Settings on share.streamlit.io: repository `Umutakkopru/pds-db-delays`, branch `main`, main file path `dashboard/app.py`, Python 3.10 under Advanced settings, no secrets.
 - Models (`models/m_*.txt|json`) and lookup tables (`dashboard/data/`) are tracked in Git, so nothing is downloaded at start-up. Every push to `main` redeploys the app.
+
+## One-screen layout (redesign, 14 Nov 2026)
+
+The page fits one screen without scrolling on desktop and laptop screens (from 1024 x 600 px) and keeps the same proportions on every size:
+
+```
+Header (title, source, "How it works")
+Inputs: line · date · hour · previous-stop delay · Predict
+Result card | What the model knows (route) | Risk through the day
+Why this prediction? (SHAP)          | When is this line usually late? (heatmap)
+```
+
+- **Fluid size:** every length in `ui/components.py` is in rem, and the root font size follows the window (`clamp(12px, min(1.06vw, 1.72vh), 26px)`), so text, cards and Streamlit's own widgets grow together (about 12 px on 1280 x 720, 15 px on 1440 x 900, 19 px on 1920 x 1080, 25 px on 2560 x 1440).
+- **Rows:** the two card rows share the height left below the header and inputs (`--row-h` = (100dvh - 15.5rem) / 2); the SHAP rows and both charts stretch with their card.
+- **Charts in HTML/CSS** (`ui/charts.py`), not Plotly: Plotly needs a fixed pixel height, HTML grids stretch with the card and use the same colour tokens. Hovering a cell or bar shows its value.
+- **Risk through the day (new):** `hourly_profile(query)` returns the predicted probability for every hour 05–23 of the chosen line and day, with the same model and previous-stop delay as the result card (one batch call, no SHAP values). Selected hour outlined, decision threshold dashed; `charts.best_hour()` points out a better hour: the lowest risk within ±2 hours of the chosen one, only if it is at least 3 points lower (on 31 Oct 2026 this happens for 109 of 703 line-hour pairs).
+- **Smaller screens** (below 1024 px wide or 600 px high, e.g. phones) stack the cards and scroll; the vertical route and stacked SHAP rows for phones are kept.
+- Checked on 1280 x 720, 1366 x 768, 1440 x 900, 1920 x 1080 and 2560 x 1440 (page height = window height, no card overflows; scenario A and B) and on 375 px (no horizontal scroll).
 
 ## Notes
 

@@ -55,6 +55,7 @@ class Predictor(Protocol):
     def predict(self, query: Query) -> Prediction: ...
     def delay_rate_grid(self, line: str) -> list[list[float]]: ...
     def calibration_note(self, probability: float) -> str | None: ...
+    def hourly_profile(self, query: Query) -> list[float]: ...
 
 
 class DemoPredictor:
@@ -115,6 +116,10 @@ class DemoPredictor:
     def calibration_note(self, probability: float) -> str | None:
         """Real predictor: e.g. 'When the model says ~40%, 38% of test departures were late.'"""
         return None  # needs the reliability table from the test set; nothing is shown in demo mode
+
+    def hourly_profile(self, query: Query) -> list[float]:
+        """Placeholder probability for every hour of HOURS (same line, day and previous-stop delay)."""
+        return [self.predict(Query(query.line, query.day, hour, query.prev_stop_delay)).probability for hour in HOURS]
 
 
 # Plain-language labels of the model features: (text, unit or kind).
@@ -326,6 +331,15 @@ class ModelPredictor:
             scenario=scenario,
             stops=[*earlier, DESTINATION],
         )
+
+    def hourly_profile(self, query: Query) -> list[float]:
+        """
+        Probability for every hour of HOURS: the same line, day and previous-stop delay,
+        with the model the query itself uses. One batch call to the model, no SHAP values.
+        """
+        scenario = self.scenario_for(query)
+        rows = [self.features(Query(query.line, query.day, hour, query.prev_stop_delay), scenario) for hour in HOURS]
+        return self.probabilities(rows, scenario)
 
     def delay_rate_grid(self, line: str) -> list[list[float]]:
         """7 x 19 grid (Mon-Sun x 05-23 h) of delay rates over the data period; None where the line rarely runs."""

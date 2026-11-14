@@ -72,6 +72,8 @@ SHAP'in standart kırmızı/mavi kuralı DB paletiyle birebir örtüşüyor; ek 
 
 ## 3. Yerleşim (tek sayfa, yukarıdan aşağı)
 
+> **Güncelleme 14 Kas 2026:** Masaüstünde sayfa artık kaydırmasız tek ekrandır: üst şerit ("How it works" düğmesiyle), girdiler, sonra iki kart satırı: sonuç | rota | gün boyu risk; SHAP | ısı haritası. Alt bilgi metni üst şeride taşındı. Ayrıntılar: `README_DASHBOARD.md`, "One-screen layout". Aşağıdaki liste ilk tasarımı anlatır.
+
 1. **Üst şerit:** koyu gri bant, altında 3 px DB kırmızısı çizgi. Solda proje adı, sağda "veri: DB açık veri, CC BY 4.0" ve tema düğmesi.
 2. **Girdi satırı:** hat/tren, tarih, saat; senaryo B için "önceki durak gecikmesi" (isteğe bağlı). Tek birincil düğme.
 3. **Kahraman sonuç kartı:** büyük olasılık, durum rozeti, tek cümlelik yorum; yanında rota şeması (§4.2).
