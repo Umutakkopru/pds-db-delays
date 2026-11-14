@@ -1,6 +1,6 @@
 # Dashboard (Streamlit)
 
-Run: `pip install -r requirements-dashboard.txt` then `streamlit run app.py` from this folder.
+Run from the repository root (as Streamlit Community Cloud does): `pip install -r dashboard/requirements.txt` then `streamlit run dashboard/app.py`.
 The page needs the final models in `../models/` and the lookup tables in `data/`
 (`python src/08_dashboard_data.py` from the repository root; both are tracked in Git).
 Without them it falls back to demo mode and says so.
@@ -15,7 +15,7 @@ Without them it falls back to demo mode and says so.
 | 4 | Motion: rolling counter + risk bar, route, staggered SHAP bars | Done |
 | 5 | Connect the trained model (`predictor.py`) | Done (14 Nov 2026): `ModelPredictor`, tests in `tests/test_dashboard.py` |
 | 6 | Polish: banded risk bar, vertical route on mobile, selected cell in the heatmap, calibration-note slot | Done |
-| 7 | Deploy on Streamlit Community Cloud + recorded backup | Open |
+| 7 | Deploy on Streamlit Community Cloud + recorded backup | Files prepared (14 Nov 2026); deploy on share.streamlit.io and backup video open |
 
 ## Connecting the model (step 5)
 
@@ -63,6 +63,16 @@ predicted, the two moments, how the model was built and checked, how good it is,
 read the page, and its limits. The text is in `about.py`; its numbers come from
 `data/meta.json` (`ModelPredictor.facts()`), so they change with the lookup tables and are
 never typed in. It uses Streamlit's own expander, so `ui/` is unchanged.
+
+## Deploy on Streamlit Community Cloud (step 7)
+
+Prepared on 14 Nov 2026; tested in a clean Python 3.10 environment with only `dashboard/requirements.txt`, started from the repository root: real models load (no demo banner, 37 lines).
+
+- Community Cloud runs `streamlit run` from the repository root and takes the first `requirements.txt` it finds next to the entrypoint, then at the root. `dashboard/requirements.txt` therefore keeps the app's environment small (streamlit, plotly, lightgbm, pandas, pyarrow); the root `requirements.txt` is for the full pipeline.
+- `packages.txt` at the repository root installs `libgomp1`, the OpenMP library LightGBM needs on Linux (Cloud reads `packages.txt` only at the root).
+- `dashboard/.streamlit/config.toml` sits next to the entrypoint, which Cloud accepts as the app's own configuration.
+- Settings on share.streamlit.io: repository `Umutakkopru/pds-db-delays`, branch `main`, main file path `dashboard/app.py`, Python 3.10 under Advanced settings, no secrets.
+- Models (`models/m_*.txt|json`) and lookup tables (`dashboard/data/`) are tracked in Git, so nothing is downloaded at start-up. Every push to `main` redeploys the app.
 
 ## Notes
 

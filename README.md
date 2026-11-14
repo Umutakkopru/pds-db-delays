@@ -55,7 +55,7 @@ python src/05_train.py --rehearsal
 
 # Lookup tables of the dashboard (after the final run), then the dashboard itself
 python src/08_dashboard_data.py
-# cd dashboard && pip install -r requirements-dashboard.txt && streamlit run app.py
+# pip install -r dashboard/requirements.txt && streamlit run dashboard/app.py   # from the repository root, as on Streamlit Cloud
 
 # Whole pipeline (steps that exist so far)
 python run_pipeline.py
