@@ -53,6 +53,10 @@ python src/05_train.py --rehearsal
 # python src/06_error_analysis.py --set test
 # python src/07_explain.py --set test
 
+# Lookup tables of the dashboard (after the final run), then the dashboard itself
+python src/08_dashboard_data.py
+# cd dashboard && pip install -r requirements-dashboard.txt && streamlit run app.py
+
 # Whole pipeline (steps that exist so far)
 python run_pipeline.py
 ```

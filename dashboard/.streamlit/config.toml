@@ -1,0 +1,20 @@
+# Theme tokens adapted from DB's open design system colour values (no DB logo or fonts).
+[theme]
+base = "dark"
+
+[theme.dark]
+primaryColor = "#73AEF4"
+backgroundColor = "#131821"
+secondaryBackgroundColor = "#282D37"
+textColor = "#F0F3F5"
+borderColor = "#3C414B"
+
+[theme.light]
+primaryColor = "#1455C0"
+backgroundColor = "#F0F3F5"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#131821"
+borderColor = "#D7DCE1"
+
+[client]
+toolbarMode = "minimal"

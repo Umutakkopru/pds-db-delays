@@ -41,6 +41,7 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
 | D24 | Feature tables | 21 scenario A features (timetable, calendar, weather, 28-day history), 4 more for scenario B (previous stops) | Time-travel test; single-feature ROC-AUC at most 0.80 | 4 |
 | D25 | Final run | One code path with three modes; lock file; rehearsal one step back in time | Rehearsal: validation optimism 0.002–0.023 PR-AUC; conclusions unchanged | 4, 5 |
+| D27 | Dashboard query | The page asks for line, day and hour; the saved models answer for a typical departure of that line; days limited to the test period | Exact parity with the final run on real rows; typical vs real departures differ by 0.3 (M-A) and 2.1 (M-B) points on average | 5 |
 | D26 | Scope closed before the final run | P1–P3 adopted; train-number history key and neighbouring-state school holidays dropped; then the single final run | Error analysis and SHAP on validation | 4, 6 |
 
 Key numbers (all 28 months, Würzburg Hbf):
@@ -659,6 +660,32 @@ Rehearsal and validation periods differ for scenario B (validation mode and rehe
 
 **Report.** Results (tables above, operating points, SHAP), Discussion (regional trains, no winter in the test period, limits of the day-ahead scenario).
 
+## D27 Dashboard: how a query is answered (14 Nov 2026)
+
+**Question.** The dashboard's design layer (`dashboard/`) asks for a line, a day, an hour and optionally the delay at the previous stop. The models were trained on single real departures. How does a query become a model input without refitting anything and without loading the data set?
+
+**Decision** (`dashboard/predictor.py`, class `ModelPredictor`; lookup tables from `src/08_dashboard_data.py`, pipeline step 8).
+- A query is answered for a **typical departure**: timetable features from the chosen line (stop number and planned stop time = median of the line in that hour, test period); calendar, observed weather and the 28-day delay rates of the chosen day, as the feature step computed them; in scenario B the previous-stop delay typed in by the user, the delay at the stop before it set to the same value, and the line's median planned minutes since the previous stop.
+- **Days are limited to the test period** (1 July – 31 October 2026), as D15 requires: weather and history exist only there, and no live data is used.
+- **Lines:** line-and-destination pairs with at least 150 test-period departures, at least 80% of them between 05 and 23 h (the hours the page offers) and at least five filled heatmap cells: 37 pairs covering 28,594 of the 31,956 test-period departures (89%). Night trains are left out (they run before 05).
+- **Scenario:** no previous-stop delay → M-A; a delay → M-B. A line that starts at Würzburg has no previous stop and is always answered by M-A.
+- **Threshold:** read from the model files (`models/m_a.json`, `m_b.json`: max F1 on validation, saved by the final run); nothing is typed in by hand.
+- **Explanation in probability points:** SHAP values add up in log-odds. They are multiplied by one common factor so that base probability + contributions equals the predicted probability exactly; signs and shares are unchanged. The base is the probability at the model's average log-odds (0.180 for M-A, 0.381 for M-B), not the average delay rate.
+- **Heatmap:** delay rate per line, weekday and hour over the whole data period (July 2024 – October 2026), cells from 10 departures.
+- **Lookup tables** (`dashboard/data/`, about 120 kB, tracked): six small tables and `meta.json` with the reliability tables of the test period. They hold no single departure (tested).
+
+**Evidence** (checked on 14 Nov 2026; the first check is an automated test).
+- For the real feature rows of the test period the predictor returns exactly the scores saved by the final run: largest difference 0 for M-A (31,956 rows) and M-B (15,898 rows).
+- The delay at the stop before the previous one is not asked for. Replacing its true value on the real scenario B rows changes M-B's probability on average by 0.009 when it is set to the previous-stop delay, 0.013 when set to zero and 0.020 when left missing; "same as the previous stop" is therefore used (99.1% of the rows stay on the same side of the threshold).
+- Typical departure against real departures of the same line, day and hour (3,000 sampled cells): mean absolute difference 0.0025 for M-A (95% below 0.014; correlation 0.998); for M-B with each train's own previous-stop delay 0.021 (95% below 0.113; correlation 0.991).
+- In the running app (`streamlit run app.py`): ICE/IC to München Hbf, 31 Oct 2026, 17:00 → scenario A 49% (threshold 29%); with 10 minutes at the previous stop → scenario B 95% (threshold 43%); no demo banner.
+
+**Limits.** A typical departure is not a real train: two trains of the same line and hour can differ. The page cannot show an outcome, because a query is not one departure. An hour in which the line does not run is answered with the line's medians (the heatmap cell is then empty).
+
+**Alternatives considered.** Replay of single real departures with their outcome (the earlier plan; needs a different page layout); free future dates (need a weather forecast and live delay rates, excluded by D15).
+
+**Report.** Results (dashboard), Discussion (limits of the typical departure).
+
 ---
 
 ## Pipeline and checks so far
@@ -676,7 +703,8 @@ Rehearsal and validation periods differ for scenario B (validation mode and rehe
 | EDA | `notebooks/01_eda.ipynb` (training and validation period only) | `reports/figures/eda_*.png` (12 figures) |
 | Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_{validation,rehearsal,test}.md`, `reports/checks/error_slices_*.csv`, `reports/figures/errors_*.png` |
 | SHAP (extension) | `src/07_explain.py` | `reports/shap_validation.md`, `reports/checks/shap_importance_validation.csv`, `reports/figures/shap_importance_validation.png`, `shap_dependence_validation.png`; the same files with `_test` for the final models (13 Nov 2026) |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py` | 151 passing (13 Nov 2026) |
+| Dashboard (extension) | `src/08_dashboard_data.py`, `dashboard/predictor.py`, `dashboard/app.py`, `dashboard/ui/` | `dashboard/data/*.parquet`, `meta.json` (lookup tables); the page itself |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py`, `test_dashboard.py` | 167 passing (14 Nov 2026) |
 | Independent audit | – | `docs/audit_2026-11-10.md` |
 
 ## Sources

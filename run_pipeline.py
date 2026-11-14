@@ -1,5 +1,5 @@
 """
-Run the pipeline steps 01–07 in order (steps that do not exist yet are skipped).
+Run the pipeline steps 01–08 in order (steps that do not exist yet are skipped).
 The tests run once at the start and again directly before the training step.
 
 Reads/writes: see the docstring of each step in src/
@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent
-STEPS = ["01_download.py", "02_clean.py", "03_enrich.py", "04_features.py", "05_train.py", "06_error_analysis.py", "07_explain.py"]
+STEPS = ["01_download.py", "02_clean.py", "03_enrich.py", "04_features.py", "05_train.py", "06_error_analysis.py", "07_explain.py", "08_dashboard_data.py"]
 
 
 def run_tests() -> None:

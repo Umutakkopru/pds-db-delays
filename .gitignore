@@ -1,7 +1,10 @@
 # Data (large, reproducible with the pipeline)
-data/
+/data/
 *.parquet
 *.csv.gz
+# the dashboard's small lookup tables are part of the app (written by src/08_dashboard_data.py)
+!dashboard/data/
+!dashboard/data/*.parquet
 
 # Python
 __pycache__/

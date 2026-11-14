@@ -185,7 +185,8 @@ The current and next week are mirrored in `CLAUDE.md`; this is the full list. It
 - [x] Error analysis on the test results (13 Nov, `reports/error_analysis_test.md`)
 - [x] Sensitivity checks coded and run on validation (11 Nov); they run again inside the final run (D9, D18)
 - [x] SHAP global (M-A, M-A′, M-B) on the test rows (13 Nov, `reports/shap_test.md`)
-- [ ] Streamlit app level 1 (developed on validation rows, switched to the test table at the end), then deploy (level 2)
+- [x] Streamlit app level 1 (14 Nov): design layer `dashboard/` connected to the saved models (`dashboard/predictor.py`, D27; the page asks for line, day and hour instead of replaying single departures)
+- [ ] Deploy (level 2) and record a backup video
 - [ ] Write the Results section draft
 - [ ] **Freeze results and figures**
 - **Result of the week:** all figures and tables of the report exist
