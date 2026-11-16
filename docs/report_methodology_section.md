@@ -102,7 +102,7 @@ The test period is the most recent data and is used once (section 4.6). Its limi
 A model that sees information from the future looks good in the evaluation and fails in use. In this project the risk is high, because the realised times sit in the same row as the features. The rules are: realised times and delays at Würzburg are never features; history ends two days before the departure; scenario B uses only stops that the train has already passed; category lists, encoders and rates are fitted on training rows and the threshold on validation rows; disruption flags only filter rows. Observed weather is the one stated exception (section 4.3). Rules alone do not protect against mistakes, so four safeguards check them:
 
 - **Feature lists.** Models read exactly the columns on the allowed list. Every raw column of the source is classified as allowed or forbidden; a new, unclassified column fails a test.
-- **Automated tests.** 151 tests run before every training run. The most important one is a time-travel test: changing every outcome from day D − 1 on must leave the features of day D unchanged, while changing day D − 2 must change them. Other tests check that the splits are chronological and disjoint, that scenario A has no previous-stop feature, that the previous stop lies before the Würzburg arrival, that scenario B rows carry exactly the scenario A feature values (so that all models are scored on identical rows), and that the test period cannot be loaded outside the final run. We also tested the tests: widening the history window by one day on purpose makes six of them fail.
+- **Automated tests.** 175 tests run before every training run. The most important one is a time-travel test: changing every outcome from day D − 1 on must leave the features of day D unchanged, while changing day D − 2 must change them. Other tests check that the splits are chronological and disjoint, that scenario A has no previous-stop feature, that the previous stop lies before the Würzburg arrival, that scenario B rows carry exactly the scenario A feature values (so that all models are scored on identical rows), and that the test period cannot be loaded outside the final run. We also tested the tests: widening the history window by one day on purpose makes six of them fail.
 - **Sanity checks on results.** No single scenario A feature may reach a ROC-AUC of 0.9 on its own. A model trained on shuffled labels must score a ROC-AUC of about 0.5. A scenario A ROC-AUC above 0.95 would be treated as a leak, not as a success. The most important features must make domain sense.
 - **Review.** Feature and split code is read by a second group member.
 
@@ -126,7 +126,7 @@ One selection remains: cancelled departures are excluded, although a cancellatio
 | Refit, single run, marker file, rehearsal | `src/05_train.py`; `REHEARSAL_SPLITS` in `src/config.py`; D21, D25 |
 | Metrics, day-block bootstrap, paired differences | `src/evaluate.py`; D13 |
 | Slices, failure types, sensitivity checks, SHAP | `src/06_error_analysis.py`, `src/07_explain.py`; D9, D18 |
-| Leakage rules and safeguards; 151 tests; six tests fail when the window is widened | `src/features_config.py` (whitelist); `tests/`; D24 |
+| Leakage rules and safeguards; 175 tests; six tests fail when the window is widened | `src/features_config.py` (whitelist); `tests/`; D24 |
 
 ## Open points before this goes into the template
 
@@ -135,6 +135,8 @@ One selection remains: cancelled departures are excluded, although a cancellatio
 - [ ] References in the template's style: [Ke et al. 2017] and [Grinsztajn et al. 2022] are in the "Sources" list of `docs/decision_log.md`; [Lundberg and Lee 2017] (SHAP) was added there on 11 Nov 2026. Check all three against the original papers before submission.
 - [ ] The sentence on thresholds per service in 4.7 is proposal P1 (`docs/group_decision_sheet.md`); remove it if the group rejects P1.
 - [ ] Table numbers continue from section 3 (Tables 1–5); renumber if section 3 is shortened.
-- [ ] After the final run: check that "151 tests" and "about two minutes" are still right.
+- [ ] After the final run: check that "175 tests" (updated from 151 on 16 Nov 2026) and "about two minutes" are still right.
+- [ ] The horizon bin "10–20 min" of the error analysis is called "up to 20 min" in the report: the test period has 149 scenario B rows with 7–9 planned minutes from the previous stop (review finding E-03).
+- [ ] E-01 (scenario B rows whose outcome is already certain at the prediction moment) and E-02 (reading of M-A − B2 as model plus features) wait for a group decision.
 - [ ] **Length.** If it has to shrink to 3–4 pages, cut first: the pipeline paragraph (4.2) down to two sentences with a link to the repository; "Left out on purpose" in 4.3 down to one sentence; the numbered list of rules in 4.8 (the safeguards carry the content).
 - [ ] Optional figure if space allows: a timeline of the two splits and the history window (none is included now).

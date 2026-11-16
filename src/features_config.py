@@ -76,7 +76,7 @@ ALLOWED_DERIVED_INPUTS = {"service", "line_id", "is_through"}
 PROPAGATION_PREFIX = "prev_"
 
 # Columns of the logistic-regression baseline B2: timetable and calendar, all
-# known the day before. The route group follows with step 04.
+# known the day before.
 BASELINE_FEATURES = [
     "service", "line_id", "planned_hour", "weekday", "is_through",
     "is_public_holiday", "is_school_holiday", "is_bridge_day",

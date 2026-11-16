@@ -16,6 +16,8 @@ pip install -r requirements-lock.txt  # exact versions (built with Python 3.10),
 pytest                                # all tests must pass
 ```
 
+Without the data (fresh clone, before step 01) the 37 data-dependent tests are skipped and the other 138 pass.
+
 `requirements.txt` lists the direct dependencies with minimum versions. Only when a dependency is added or updated on purpose: `pip install -r requirements.txt`, then `pip freeze > requirements-lock.txt`, and commit both files.
 
 ## Run
@@ -48,7 +50,7 @@ python src/07_explain.py
 # Rehearsal of the final procedure, one step back in time (test period untouched)
 python src/05_train.py --rehearsal
 
-# The single final run on the test period: ONCE, after the group has agreed; refuses a second run
+# The single final run on the test period: done on 13 Nov 2026; do not run again (a second run is refused)
 # python src/05_train.py --final
 # python src/06_error_analysis.py --set test
 # python src/07_explain.py --set test
@@ -57,7 +59,7 @@ python src/05_train.py --rehearsal
 python src/08_dashboard_data.py
 # pip install -r dashboard/requirements.txt && streamlit run dashboard/app.py   # from the repository root, as on Streamlit Cloud
 
-# Whole pipeline (steps that exist so far)
+# Whole pipeline (all eight steps)
 python run_pipeline.py
 ```
 
@@ -70,20 +72,30 @@ python checks/category_check.py      # train types and line numbers over time
 python checks/data_quality_check.py  # duplicates, cancellations, collection gaps
 ```
 
+## Results (test period, July – October 2026)
+
+From [`reports/results.md`](reports/results.md) (single final run, 13 Nov 2026; PR-AUC with 95% intervals from 1,000 day resamples):
+
+- **All departures (31,956, 23.0% delayed):** B1 service x hour 0.523, B2 logistic regression 0.545, M-A LightGBM 0.629 [0.610, 0.648].
+- **Scenario B rows (15,898 through trains, 37.6% delayed):** B3 previous-stop delay 0.885, M-A′ 0.690, M-B 0.935 [0.928, 0.942].
+- **Paired differences:** M-A − B2 +0.084 [+0.072, +0.097]; M-B − M-A′ +0.245 [+0.228, +0.263]; M-B − B3 +0.051 [+0.045, +0.057]; all intervals above zero.
+
+**Reproducing.** The final run on the test period was done once on 13 Nov 2026 and is not repeated by design; `reports/final_run.json` blocks a second run. The final results are the tracked files in `reports/` and `models/`. From a fresh clone the pipeline reproduces everything up to the validation and rehearsal results; the test-period steps (`06`/`07 --set test`, `08`) need the scored predictions, which are not in Git.
+
 ## Repository layout
 
 | Path | Content |
 | --- | --- |
-| `src/` | Pipeline steps `01`–`05` (steps `01`–`04` and `05` on validation exist; the final test run is planned), `models.py` (LightGBM helpers and the tuning grid), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
+| `src/` | Pipeline steps `01`–`08` (download, clean, enrich, features, train and evaluate, error analysis, SHAP, dashboard data; the final test run was done on 13 Nov 2026), `models.py` (LightGBM helpers and the tuning grid), `evaluate.py` (metrics, bootstrap), `baselines.py`, `config.py` (paths, splits, seed, dataset revision), `features_config.py` (feature whitelist) |
 | `src/sql/` | SQL used by the pipeline (DuckDB) |
 | `tests/` | Leakage, configuration, filter and data tests, run at the start of every pipeline run |
 | `checks/` | Data check scripts (coverage, categories, data quality) |
 | `reference/` | Small tracked tables with their sources (Bavarian school holidays) |
-| `docs/` | Project plan (requirements, timeline, roles) and decision log (decisions with evidence) |
+| `docs/` | Project plan (requirements, timeline, roles), decision log (decisions with evidence), group decision sheet, proposal draft, report drafts (Data, Methodology), the two independent audits, and their PDFs in `docs/pdf/` |
 | `notebooks/` | EDA only, no pipeline logic (`01_eda.ipynb`: training and validation period, writes `reports/figures/eda_*.png`) |
 | `dashboard/` | Streamlit dashboard: `app.py`, model connection `predictor.py`, design in `ui/`, lookup tables in `data/` (see `dashboard/README_DASHBOARD.md`) |
 | `models/` | Final models M-A, M-A′, M-B (LightGBM text files with features, categories, setting and threshold) |
-| `reports/` | Data checks (`reports/checks/`), validation results (`results_validation.md`), error analysis (`error_analysis_validation.md`), figures; final results table (planned) |
+| `reports/` | Data checks (`reports/checks/`), validation and rehearsal results (`results_validation.md`, `results_rehearsal.md`), final results on the test period (`results.md`, lock file `final_run.json`), error analysis and SHAP for validation and test (`error_analysis_*.md`, `shap_*.md`), figures |
 | `data/` | Raw, interim and processed data (not in Git) |
 
 ## Drafts as PDF

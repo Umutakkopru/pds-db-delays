@@ -1,12 +1,15 @@
 """
 Automated leakage checks. Run with `pytest` before every training run.
 
-Current tests cover the feature whitelist and the split definition.
-Limits: the whitelist tests compare column names only and pass trivially
-while the feature lists are empty. To add with steps 04 and 05: the columns of
-the feature tables given to the models equal FEATURES[scenario]; time-travel
-test for history features; earlier-stop timing test for scenario B (see
-decision log, D24).
+The tests here check the feature lists and the split definition: no forbidden
+column in any scenario, no propagation feature in scenario A, scenario B adds
+only propagation features, splits chronological, disjoint and inside the data
+period, one test period for both scenarios, scenario B training from full
+coverage on. They compare column names and dates only. The checks on the data
+itself (feature tables equal the whitelist, time-travel test of the history
+features, earlier stops before the Würzburg arrival) are in
+tests/test_features.py; the guard on the test period is in
+tests/test_final_run.py.
 """
 import pandas as pd
 import pytest

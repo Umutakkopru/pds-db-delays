@@ -1,6 +1,8 @@
-# Group decision sheet: D1–D25 and three open proposals
+# Group decision sheet: D1–D27 and three proposals
 
-One-page-per-topic summary for the group meeting. All 25 decisions were prepared by one member and are **proposals** until the group has confirmed them. Details, evidence and alternatives: `docs/decision_log.md` (same numbers). The single final run on the test period waits for this confirmation, because nothing may change afterwards.
+One-page-per-topic summary for the group meeting. All 27 decisions were prepared by one member and are **proposals** until the group has confirmed them. Details, evidence and alternatives: `docs/decision_log.md` (same numbers). The single final run on the test period was already done on 13 Nov 2026, before this meeting (D26); its results cannot be changed any more.
+
+**What can still change.** Rows that only concern reporting or the dashboard (P1 and P3 wording, D15/D27, D22, roles, report sections) can still be changed. Everything the test run used (D2–D14, D16–D21, D23–D26, P2) can no longer change the results: an objection to one of these rows is recorded as a limitation in the report.
 
 **How to use it.** Go through the tables together. For each row write one of: **OK** (confirmed), **Change:** what instead, **Open:** what is unclear. Rows marked ★ have a real alternative and deserve a short discussion; the others follow from the data checks. Afterwards one member records the result (section "How the result is recorded").
 
@@ -40,11 +42,13 @@ One-page-per-topic summary for the group meeting. All 25 decisions were prepared
 | --- | --- | --- |
 | ★ D25 | Final run = one command with a lock; rehearsal one step back in time; thresholds from validation | |
 | D15 | Dashboard replays real departures of the test period; no free future dates | |
-| D22 | Order of work; minimum version frozen 1 December, extensions 8 December, everything finished 15 December | |
+| D22 | Order of work; minimum version frozen 1 December, extensions 8 December, everything finished 15 December (in fact frozen on 13 November with the final run, D26) | |
+| ★ D26 | Scope closed before the final run (13 Nov): P1–P3 adopted; train-number history key and neighbouring-state school holidays dropped; then the single final run on the test period, decided by the preparing member | |
+| D27 | Dashboard query: the page asks for line, day and hour in the test period; the saved models answer for a typical departure of that line (replaces the replay of D15) | |
 | ★ – | Roles and report sections per member (`docs/project_plan.md` section 7) | |
 | ★ – | Order of what is dropped if time is short (`docs/project_plan.md` section 5) | |
 
-## D. Three open proposals (new, 11 Nov 2026; to decide before the final run)
+## D. Three proposals (11 Nov 2026; adopted with D26 before the final run)
 
 They answer weaknesses seen on validation. None changes a model or a feature; P1 and P2 add reporting, P3 is a wording decision. Evidence is from the rehearsal (scored rows were not used for any choice).
 

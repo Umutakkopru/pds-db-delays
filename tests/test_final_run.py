@@ -45,10 +45,19 @@ def test_marker_records_the_commit(tmp_path):
     assert '"commit"' in text and '"finished"' in text and '"rows_a": 1' in text
 
 
-def test_the_final_run_has_not_happened_yet_or_is_complete():
-    # Either no final run yet, or all of its outputs exist together.
-    outputs = [train_step.FINAL_MARKER, train_step.MODES["final"][1], train_step.prediction_file("final", "A")]
-    assert len({f.exists() for f in outputs}) == 1, "partial outputs of a final run found"
+def test_final_marker_and_results_file_exist_together():
+    # Both files are tracked in Git: either no final run yet, or both exist.
+    assert train_step.FINAL_MARKER.exists() == train_step.MODES["final"][1].exists(), \
+        "partial outputs of a final run found (marker and results file)"
+
+
+def test_final_predictions_exist_together_with_the_marker():
+    # The scored predictions live in the ignored data/ folder: checked only where
+    # the pipeline has produced data (step 04), so that a fresh clone passes.
+    if not train_step.FEATURE_FILES["A"].exists():
+        pytest.skip("run src/04_features.py first")
+    assert train_step.prediction_file("final", "A").exists() == train_step.FINAL_MARKER.exists(), \
+        "partial outputs of a final run found (marker and predictions)"
 
 
 def test_modes_write_to_different_files():

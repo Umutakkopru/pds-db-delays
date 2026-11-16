@@ -2,9 +2,9 @@
 
 > Read this file before working on the proposal, the report, the slides, grading questions, roles, the timeline, risks or extensions. Data and method decisions with evidence are in `docs/decision_log.md`.
 
-Last updated: 10 Nov 2026 · PDS Group 18
+Last updated: 16 Nov 2026 · PDS Group 18
 
-**Status of decisions (10 Nov 2026):** all decisions and the plan so far (D1–D25, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them. From now on, decisions are made by the group together.
+**Status (16 Nov 2026):** all decisions and the plan so far (D1–D27, timeline, roles) were prepared by one member and are **proposals** until the whole group has discussed and confirmed them; the group's confirmation is still to be recorded (`docs/group_decision_sheet.md`). The single final run on the test period was done on 13 Nov 2026 (D26): features, models, settings, thresholds and evaluation code are frozen since then. What remains is the dashboard backup video and the documents (proposal, report, slides). From now on, decisions are made by the group together.
 
 ## 1. Assignment brief: key facts
 
@@ -44,7 +44,7 @@ To pass, we need a baseline plus at least one more approach, implemented with su
 | Failures, improvements, next steps | Error slices, top errors, limitations, next steps | Discussion |
 | Documentation of code and report | README, docstrings, one-command pipeline, tests, template adherence, citations | Repository, whole report |
 | Presentation | 10-minute talk, live demo plus recorded backup | Slides |
-| Dashboard functionality | Deployed Streamlit app (test-period replay) with SHAP explanation | Results, appendix link |
+| Dashboard functionality | Deployed Streamlit app (query by line, day and hour in the test period, D27) with SHAP explanation | Results, appendix link |
 | GenAI use and contributions (mandatory sections) | Members' AI-use logs merged into a table; role table | Dedicated sections |
 
 **Success criteria.**
@@ -71,11 +71,11 @@ The minimum version (baselines, LightGBM, evaluation) comes first; extensions st
 
 | Level | What | Effort | Status |
 | --- | --- | --- | --- |
-| 1 | Replay of real test-period departures (Jul – Oct 2026, D15): choose a date and a departure → delay probability (scenario A) and actual outcome, previous-stop delay slider (scenario B), SHAP explanation | 1–2 days | Committed |
-| 2 | Deploy on Streamlit Community Cloud with a public link | ~half a day | Committed |
+| 1 | Query by line, day and hour in the test period (Jul – Oct 2026, D27, replacing the replay of D15): the saved models answer for a typical departure of that line (scenario A without, scenario B with a previous-stop delay), with contributions per feature group | 1–2 days | Done (14 Nov) |
+| 2 | Deploy on Streamlit Community Cloud with a public link | ~half a day | Deployed (owner, 16 Nov; URL to be added to README); backup video open |
 | 3 | Connection check: probability of catching a transfer at Würzburg (e.g. ICE to RE with 7 min) | ~1 day | If time allows |
 
-The app loads a saved model and a small table of test-period feature rows, never the raw data. No free future dates (weather and history would need live API calls). Not planned: FastAPI, a separate frontend, user accounts or live API calls.
+The app loads the saved models and small lookup tables of the test period (D27), never the raw data. No free future dates (weather and history would need live API calls). Not planned: FastAPI, a separate frontend, user accounts or live API calls.
 
 | Extension | What we do | Criterion | Priority |
 | --- | --- | --- | --- |
@@ -84,7 +84,7 @@ The app loads a saved model and a small table of test-period feature rows, never
 | SHAP | Global importance plus per-prediction explanations (reused in the dashboard) | Explainability | Core |
 | Error analysis | Largest errors by service, hour, weather, day type, horizon; typical failure cases | Failure documentation | Core |
 | Sensitivity checks | Cancellations counted as delayed (D9); departures without timetable record included (D18) | Rigour | Core |
-| Weather ablation | M-A without weather features, on validation (D21) | Rigour | If time allows (dropped first) |
+| Weather ablation | M-A, M-A′ and M-B without weather features, on validation (D21) | Rigour | Done (validation, all three models) |
 | Calibration and robustness | Reliability diagram; performance by season (validation) and weather extremes | Rigour | If time allows |
 | Random Forest check | Same features as M-A; confirms the LightGBM choice | Variety of models | If time allows |
 | Regression or three-class variant | Delay minutes (MAE), or 0–5 / 6–15 / 16+ min | Variety of models | If time allows |
@@ -92,7 +92,7 @@ The app loads a saved model and a small table of test-period feature rows, never
 
 ## 5. Timeline
 
-Proposed timeline (to be agreed by the group). It is written as **one sequential track**: a single member can follow it from top to bottom without waiting for anyone. Other members can take steps over or work through the same steps in parallel; where two members produce the same result, the results are compared. The minimum version (baselines B0–B3, LightGBM A, A′ and B, results table) is frozen on **1 December**, the extensions on **8 December**, the whole project (report and slides) is finished by **15 December**; the rest is buffer until the submission on 18 January.
+Proposed timeline (to be agreed by the group). It is written as **one sequential track**: a single member can follow it from top to bottom without waiting for anyone. Other members can take steps over or work through the same steps in parallel; where two members produce the same result, the results are compared. The minimum version (baselines B0–B3, LightGBM A, A′ and B, results table) is frozen on **1 December**, the extensions on **8 December**, the whole project (report and slides) is finished by **15 December**; the rest is buffer until the submission on 18 January. *Status 16 Nov 2026:* the minimum version and the extensions were frozen earlier, on 13 Nov 2026, with the single final run (D26).
 
 | Phase / milestone | Dates |
 | --- | --- |
@@ -128,7 +128,8 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [x] Assignment brief added and checked: submission 18 Jan 2027, presentation 25 Jan 2027 corrected
 - [ ] Download the chair's report template into `../Informations/`
 - [x] Repository scaffold: folders, `README.md`, `requirements.txt`, `.gitignore`, `pytest.ini`, `src/config.py`, `run_pipeline.py`
-- [ ] Push the repository to GitHub and add the team as collaborators
+- [x] Push the repository to GitHub — done (`origin/main` up to date)
+- [ ] Add the team as collaborators on GitHub
 - [x] `01_download.py` and `src/sql/01_filter_month.sql`; tested on Oct 2026 with `--show-example` (12,975 Würzburg rows, 82,842 earlier-stop rows, RB53 with 14 earlier stops)
 - [x] All 28 months downloaded and filtered (`data/interim` 88 MB); `reports/checks/` reviewed: no missing months; ARV from Dec 2025; line format change Dec 2025
 - [x] `checks/category_check.py`: ARV = relabel of RE8/RB8/RE80; NaN types and buses explained; category rules fixed
@@ -147,7 +148,8 @@ This is the full list of weeks. Items are in working order; each week ends with 
 **Week 2 — cleaning, baselines, proposal draft (until 17 Nov 2026)**
 
 - [x] Register the group by 15 Nov 2026 (hard deadline) — done
-- [ ] Merge the audit branch, push to GitHub, download the chair's template
+- [x] Merge the audit branch, push to GitHub
+- [ ] Download the chair's template
 - [x] `02_clean`: `exclude_reason`, `dep_delay`, `delayed`, `line_id`, `service`, `is_through`, `has_prev_stop`; tests; `cleaning_counts.csv` per split (D19, D20)
 - [x] `src/evaluate.py`: PR-AUC, ROC-AUC, F1/precision/recall at a threshold, Brier, paired day-block bootstrap; unit tests on small made-up data
 - [x] Baselines B0, B1 (service × hour), B2 (logistic regression) on validation → first results table (`reports/results_validation.md`, 10 Nov; B2 gets holidays after step 03)
@@ -164,7 +166,7 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [x] (11 Nov) Tests with the feature code: time-travel, earlier stops before the Würzburg arrival, no row in two splits, identical scenario B rows for M-A′, M-B and B3, feature columns equal the whitelist
 - [x] Baseline B3 (persistence rule) on validation (D17): PR-AUC 0.877, F1 0.806 on the scenario B validation rows (11 Nov)
 - [x] Write the Data section draft (11 Nov, `docs/report_data_section.md`: about 2,000 words of text, 5 tables, 4 figures; open points listed at its end)
-- [ ] Deploy an empty test app on Streamlit Community Cloud (checks Python and LightGBM versions early)
+- [x] Deploy an empty test app on Streamlit Community Cloud — overtaken by the deployment of the full app (16 Nov)
 - **Result of the week:** feature tables with passing leakage tests, B3 score, Data section draft
 
 **Week 4 — main models and test run (until 1 Dec 2026)**
@@ -186,7 +188,8 @@ This is the full list of weeks. Items are in working order; each week ends with 
 - [x] Sensitivity checks coded and run on validation (11 Nov); they run again inside the final run (D9, D18)
 - [x] SHAP global (M-A, M-A′, M-B) on the test rows (13 Nov, `reports/shap_test.md`)
 - [x] Streamlit app level 1 (14 Nov): design layer `dashboard/` connected to the saved models (`dashboard/predictor.py`, D27; the page asks for line, day and hour instead of replaying single departures)
-- [ ] Deploy (level 2) and record a backup video
+- [x] Deploy (level 2) — deployed on Streamlit Community Cloud (owner, 16 Nov)
+- [ ] Record a backup video of the dashboard
 - [ ] Write the Results section draft
 - [ ] **Freeze results and figures**
 - **Result of the week:** all figures and tables of the report exist
@@ -240,7 +243,7 @@ Code lives in one documented GitHub repository linked from the PDF. The decision
 | A-vs-B difference confounded by training period | Confirmed | Medium | Control model M-A′ (D13) |
 | Data leakage | Medium | High | Leakage rules, feature whitelist, forbidden columns, automated tests, sanity checks, second-member review |
 | Scenario A scores modestly | High | Low | Expected; reported as a finding; scenario B carries performance |
-| Dashboard grows beyond scope | Medium | Medium | Fixed three levels; replay only; level 3 only after the report draft exists |
+| Dashboard grows beyond scope | Medium | Medium | Fixed three levels; fixed query (D27); level 3 only after the report draft exists |
 | Report left to the end | Medium | High | Write each section in the week its work is done |
 | Most of the work falls on one member | Medium | High | Timeline is a single sequential track with a fixed order of what is dropped (section 5); minimum version first; buffer of five weeks after 15 Dec |
 | Fallback needed | Low | High | German electricity demand (OPSD/SMARD), same pipeline pattern |

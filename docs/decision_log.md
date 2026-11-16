@@ -6,9 +6,9 @@ Purpose: a chronological record of every data and method decision, with the ques
 
 How to add an entry: copy the template at the end, give it the next number, link the script and the output file. One entry per decision, written when the decision is made.
 
-Who decided: D1–D25 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
+Who decided: D1–D27 were prepared by one member and are **proposals until confirmed by the group** (to be discussed after 9 Nov 2026; no confirmation recorded as of 16 Nov 2026). When the group confirms or changes a decision, note it in that entry ("Confirmed by the group on …" or a new entry). New decisions are made together.
 
-Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; evaluation protocol refined in D13–D15; disruption flags forbidden in D16; independent audit on 10 Nov, its recommendations recorded as D17–D22; cleaning step next).
+Status: 16 Nov 2026 (decisions D1–D27; pipeline steps 01–08 complete; the single final run on the test period was done on 13 Nov 2026 (D26), features, models, settings, thresholds and evaluation code are frozen; second project review on 16 Nov; remaining: report and documents).
 
 ---
 
@@ -41,8 +41,8 @@ Status: 10 Nov 2026, end of week 1 (data acquisition and data checks complete; e
 | D23 | Enrichment | Weather from Open-Meteo in UTC, converted to local time; Bavarian public and school holidays; bridge days | Open-Meteo's "local time" ignores summer time; official holiday announcement | 3, 4 |
 | D24 | Feature tables | 21 scenario A features (timetable, calendar, weather, 28-day history), 4 more for scenario B (previous stops) | Time-travel test; single-feature ROC-AUC at most 0.80 | 4 |
 | D25 | Final run | One code path with three modes; lock file; rehearsal one step back in time | Rehearsal: validation optimism 0.002–0.023 PR-AUC; conclusions unchanged | 4, 5 |
-| D27 | Dashboard query | The page asks for line, day and hour; the saved models answer for a typical departure of that line; days limited to the test period | Exact parity with the final run on real rows; typical vs real departures differ by 0.3 (M-A) and 2.1 (M-B) points on average | 5 |
 | D26 | Scope closed before the final run | P1–P3 adopted; train-number history key and neighbouring-state school holidays dropped; then the single final run | Error analysis and SHAP on validation | 4, 6 |
+| D27 | Dashboard query | The page asks for line, day and hour; the saved models answer for a typical departure of that line; days limited to the test period | Exact parity with the final run on real rows; typical vs real departures differ by 0.3 (M-A) and 2.1 (M-B) points on average | 5 |
 
 Key numbers (all 28 months, Würzburg Hbf):
 
@@ -205,6 +205,8 @@ Before November 2025 the only earlier stop of an RB/RE train is a distant large 
 **Decision.** Scenario B trains from 3 Nov 2025 (first full day): train 3 Nov 2025 – Apr 2026, validation May – Jun 2026, test Jul – Oct 2026 (same as A). Set as `FULL_COVERAGE_START` in `src/config.py`; tested.
 
 **Why not use the earlier period.** The model would learn that earlier-stop information exists almost only for ICE trains, a pattern that changes abruptly in November 2025 and does not exist in the test period. The shorter period still contains a winter (Nov 2025 – Feb 2026) and ~24,000 through-train departures (23,946, see D13).
+
+*Correction (16 Nov 2026, audit B-05):* the final count of scenario B training rows is 23,926 (`reports/checks/through_train_counts.csv`, `reports/results_validation.md`); 23,946 is the approximate count of 7 Nov. The decision is unchanged.
 
 **Report.** Data (coverage table as evidence), Methodology (scenario B split).
 
@@ -440,6 +442,7 @@ These rows exist only because DB's change feed reported something for them; in 2
 
 **Decision.**
 - **Refit:** the number of trees found by early stopping and the max-F1 threshold are kept unchanged when the final models are refitted on training + validation (A: 152,421 → 198,420 rows; B through trains: 23,946 → 31,977). The report says so; PR-AUC, ROC-AUC and Brier do not depend on the threshold.
+  - *Correction (16 Nov 2026, audit B-05):* the refit used 152,384 → 198,377 rows (A) and 23,926 → 31,946 (scenario B), as `reports/results.md` states; the numbers above are the approximate counts of 7 Nov.
 - **Tuning budget:** at most 20 hyperparameter settings per model, fixed before the first run.
 - **Weather ablation:** M-A is trained once without the weather features and compared on validation. It bounds the limitation that observed weather stands in for a forecast. It is the first item dropped if time is short.
 - **Order of work:** features, tuning, SHAP checks, error-analysis code and the dashboard are developed on validation data; the test run is one command at the end (see D13).
@@ -704,7 +707,7 @@ Rehearsal and validation periods differ for scenario B (validation mode and rehe
 | Error analysis | `src/06_error_analysis.py`, `src/plot_style.py` | `reports/error_analysis_{validation,rehearsal,test}.md`, `reports/checks/error_slices_*.csv`, `reports/figures/errors_*.png` |
 | SHAP (extension) | `src/07_explain.py` | `reports/shap_validation.md`, `reports/checks/shap_importance_validation.csv`, `reports/figures/shap_importance_validation.png`, `shap_dependence_validation.png`; the same files with `_test` for the final models (13 Nov 2026) |
 | Dashboard (extension) | `src/08_dashboard_data.py`, `dashboard/predictor.py`, `dashboard/app.py`, `dashboard/ui/` | `dashboard/data/*.parquet`, `meta.json` (lookup tables); the page itself |
-| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py`, `test_dashboard.py` | 167 passing (14 Nov 2026) |
+| Tests | `tests/test_leakage.py`, `test_config.py`, `test_data.py`, `test_filter_sql.py`, `test_clean.py`, `test_evaluate.py`, `test_enrich.py`, `test_features.py`, `test_models.py`, `test_error_analysis.py`, `test_final_run.py`, `test_explain.py`, `test_dashboard.py` | 175 passing (16 Nov 2026; in a fresh clone without data 138 pass and 37 are skipped) |
 
 ## Sources
 

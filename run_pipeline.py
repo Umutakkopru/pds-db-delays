@@ -1,5 +1,5 @@
 """
-Run the pipeline steps 01–08 in order (steps that do not exist yet are skipped).
+Run the pipeline steps 01–08 in order.
 The tests run once at the start and again directly before the training step.
 
 Reads/writes: see the docstring of each step in src/
