@@ -10,7 +10,7 @@ The Markdown is turned into HTML (mistune) and printed by headless Chrome.
 The layout is a plain A4 page; it approximates the length in the chair's
 template but does not replace it.
 
-Reads:  docs/proposal_draft.md, docs/report_*.md, docs/group_decision_sheet.md
+Reads:  docs/proposal.md, docs/proposal_draft.md, docs/report_*.md, docs/group_decision_sheet.md
 Writes: docs/pdf/<same name>.pdf
 
 Usage: python tools/export_pdf.py                 # all drafts
@@ -28,7 +28,7 @@ import mistune
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 PDF_DIR = DOCS / "pdf"
-DRAFTS = ["proposal_draft.md", "report_*.md", "group_decision_sheet.md"]
+DRAFTS = ["proposal.md", "proposal_draft.md", "report_*.md", "group_decision_sheet.md"]
 CHROME_CANDIDATES = [
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     "/Applications/Chromium.app/Contents/MacOS/Chromium",
