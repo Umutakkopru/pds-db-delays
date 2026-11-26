@@ -1,6 +1,6 @@
 # Predicting Train Delays at Würzburg Hbf
 
-Practical Data Science capstone project · Information Systems M.Sc. · University of Würzburg · WiSe 2026/27 · Group 18
+Practical Data Science capstone project · University of Würzburg · WiSe 2026/27 · Group 18
 
 **Live dashboard:** [pds-db-delays.streamlit.app](https://pds-db-delays.streamlit.app)
 
