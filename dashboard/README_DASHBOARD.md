@@ -5,7 +5,7 @@ The page needs the final models in `../models/` and the lookup tables in `data/`
 (`python src/08_dashboard_data.py` from the repository root; both are tracked in Git).
 Without them it falls back to demo mode and says so.
 
-## Status by step (see DESIGN_PLAN.md §8)
+## Status by step
 
 | Step | What | Status |
 |---|---|---|

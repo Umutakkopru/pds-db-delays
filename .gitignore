@@ -20,3 +20,6 @@ venv/
 
 # macOS
 .DS_Store
+
+# PDF copies of the drafts (made locally with tools/export_pdf.py)
+docs/pdf/

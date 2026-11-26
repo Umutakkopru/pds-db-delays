@@ -112,7 +112,7 @@ Data checks (coverage of earlier stops, train categories over time, data quality
 | `models/` | Final models M-A, M-A′, M-B with their features, setting and threshold |
 | `reports/` | Results for validation, rehearsal and test; error analysis; SHAP; figures; data checks |
 | `dashboard/` | Streamlit app, model connection, design components, lookup tables |
-| `docs/` | Project plan, decision log, reviews of the project, report drafts (PDFs in `docs/pdf/`) |
+| `docs/` | Project plan, decision log, proposal, report drafts |
 | `reference/` | School holiday table with its source |
 | `tools/` | PDF export of the report drafts |
 | `data/` | Raw, interim and processed data (not in Git; recreated by the pipeline) |

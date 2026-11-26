@@ -11,7 +11,7 @@ The layout is a plain A4 page; it approximates the length in the chair's
 template but does not replace it.
 
 Reads:  docs/proposal.md, docs/proposal_draft.md, docs/report_*.md, docs/group_decision_sheet.md
-Writes: docs/pdf/<same name>.pdf
+Writes: docs/pdf/<same name>.pdf (local copies for reading; not tracked in Git)
 
 Usage: python tools/export_pdf.py                 # all drafts
        python tools/export_pdf.py docs/report_data_section.md
